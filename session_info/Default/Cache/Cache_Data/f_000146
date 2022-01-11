@@ -1,0 +1,366 @@
+//================================================================================
+// 공통 스크립트
+// 화면 Block 과 관련된 내용이 기술되어 있다.
+//--------------------------------------------------------------------------------
+// jQuery 1.8+ 버전 dependency
+//--------------------------------------------------------------------------------
+// 작성자 : 김지민
+// 작성일자 : 2014.09.04
+//================================================================================
+
+/** block layer z-index */
+var blockLayerZIndex = 10000;
+/** block instances */
+var blockInstances = [];
+
+
+(function($) {
+    /**
+     * ECMAScript 5 Strict Mode.
+     */
+    "use strict";
+    /**
+     * Block 클래스
+     *
+     * @class
+     */
+    ext.Block = function () {
+        /** block object */
+        this.block = null;
+        /** block jQuery object */
+        this.$block = null;
+        /** message object */
+        this.message = null;
+        /** block class name */
+        this.blockClassName = '_block';
+        /** block message class name */
+        this.messageClassName = '_blockMessage';
+        /** before focus element */
+        this.beforeFocus = null;
+        /** stop resize flag */
+        this.isStopResize = false;
+        /** stop scroll flag */
+        this.isStopScroll = false;
+    };
+
+
+    ext.Block.prototype = {
+        options: {
+            /** message show */
+            show: true,
+            /** block style */
+            blockStyle: {
+                block: true,
+                position: "absolute",
+                zIndex: 0,
+                background: "",  //"url(/resource/img/bg/bg_layer_wrap.png) repeat left top",
+                backgroundColor: "#646464",
+                opacity: 0.3,
+                cursor: "default",
+                left: 0,
+                top: 0
+            },
+            /** block style */
+            messageStyle: {
+                zIndex: 0,
+                position: "absolute",
+                opacity: 1.0
+            },
+            /** message add top pixel */
+            addTop : 0,
+            /** message add left pixel */
+            addLeft : 0,
+            /** message min top fixel */
+            minTop: 0,
+            /** message min left fixel */
+            minLeft: 0,
+            /** message max top fixel */
+            maxTop: 0,
+            /** message max left fixel */
+            maxLeft: 9999,
+            /** message focus */
+            focus: true,
+            /** message focus leave */
+            focusleave: false,
+            /** resize */
+            resize: true,
+            /** resize */
+            esckey: true
+        },
+        /**
+         *
+         * @param message Element ID or HTML
+         * @param options block options
+         * @param callback block callback
+         */
+        show: function(message, options, callback) {
+            if(options) {
+                options.blockStyle = $.extend({}, this.options.blockStyle, options.blockStyle || {});
+                options.messageStyle = $.extend({}, this.options.messageStyle, options.messageStyle || {});
+            }
+            //--------------------------------------------------------------------------------
+            this.options = $.extend({}, this.options, options || {});
+            //--------------------------------------------------------------------------------
+            this.options.blockStyle.zIndex = ++window.top.blockLayerZIndex;
+            //--------------------------------------------------------------------------------
+            this.block = document.createElement("div");
+            $(this.block).attr("class", this.blockClassName);
+            //--------------------------------------------------------------------------------
+            if(this.options.blockStyle.block) {
+                $(this.block).prependTo(window.top.document.body).css({
+                    height: $(window.top.document).height() + "px",
+                    width: $(window.top.document).width() - (IS_MSIE && !IS_IE11 ? WindowUtil.getScrollBarWidth() : 0) + "px"
+                }).css(this.options.blockStyle);
+            }
+            //--------------------------------------------------------------------------------
+            this.beforeFocus = $(currentFocusElement);  // 현재 포커스 객체 저장.
+            window.top.blockInstances.push(this);       // 블럭 개체 저장.
+            //--------------------------------------------------------------------------------
+            // message 처리
+            //--------------------------------------------------------------------------------
+            if(!message) {
+                if(callback) {
+                    callback();
+                }
+            }
+            else {
+                this.message = $(message);
+                this.options.messageStyle.zIndex = ++window.top.blockLayerZIndex;
+                //--------------------------------------------------------------------------------
+                // 메세지를 화면에 추가 (* 포커스가 주소창으로 이동하는 문제로 window.top.document.body 바로 아래에 append 한다 )
+                //--------------------------------------------------------------------------------
+                $(this.message).css(this.options.messageStyle).prependTo(window.top.document.body).addClass(this.messageClassName);
+                //--------------------------------------------------------------------------------
+                // 화면 보다 크다면 화면에 맞춘다
+                //--------------------------------------------------------------------------------
+                if($(this.block).width() < $(this.message).width()) {
+                    $(this.message).css({
+                        width: $(this.block).width() - 10 + "px"
+                    });
+                }
+                //--------------------------------------------------------------------------------
+                // IE7 에서 title background image 가 width 를 줘야 적용됨
+                //--------------------------------------------------------------------------------
+                if(IS_MSIE && BROWSER_VERSION < 8) {
+                    this.message.css({width: this.message.width()}).find("strong:first").css({width: "100%"});
+                }
+                //--------------------------------------------------------------------------------
+                this.animation(this, true, function($that) {
+                    $that.setTabIndex();
+                    //--------------------------------------------------------------------------------
+                    // 메시지 포커스 여부
+                    //--------------------------------------------------------------------------------
+                    if($that.options.focus) {
+                        setTimeout(function () {
+                            $($that.message).find("div,a").filter(":first").focus();
+                        }, 100);
+                    }
+                    //--------------------------------------------------------------------------------
+                    // 메세지 안에서만 포커스 이동
+                    //--------------------------------------------------------------------------------
+                    $($that.message).find('a,:input').filter(':not(:hidden):last').blur(function (event) {
+                        if(!$that.options.focusleave)
+                            $($that.message).find('div,a').filter(':first').focus();
+                    });
+                    //--------------------------------------------------------------------------------
+                    // 메인 화면으로 포커스 이동을 금지.
+                    //--------------------------------------------------------------------------------
+                    $(PAGE_WRAP).find('a,input,select,textarea,button').focus(function () {
+                        if (!$that.options.focusleave)
+                            $($that.getLastMsg()).find('a,:input').filter(':first').focus();
+                    });
+                    //--------------------------------------------------------------------------------
+                    // 블럭 포커스 금지.
+                    //--------------------------------------------------------------------------------
+                    $($that.block).bind('click focus', function () {
+                        if (!$that.options.focusleave)
+                            $($that.getLastMsg()).find('div,a').filter(':first').focus();
+                    });
+                    //--------------------------------------------------------------------------------
+                    // 메세지 hover.
+                    //--------------------------------------------------------------------------------
+                    $($that.message).hover(function() {
+                        // ignore..
+                    }, function() {
+                        $(window.top.document).find('html').css({
+                            'overflow-y' : 'scroll',
+                            'margin-right' : 0 + 'px'
+                        }).delayTime(100, function () {
+                            $that.isStopScroll = false;
+                        });
+                    });
+                    //--------------------------------------------------------------------------------
+                    // Resize 이벤트
+                    //--------------------------------------------------------------------------------
+                    $(window.top).bind('resize.block.' + $that.options.messageStyle.zIndex, function (e) {
+                        if (!$that.options.resize || $that.isStopResize) {
+                            return;
+                        }
+                        //--------------------------------------------------------------------------------
+                        $that.isStopScroll = true;
+                        //--------------------------------------------------------------------------------
+                        // 블럭킹 사이즈 조정(window 크기에 맞춘다. 사이즈 초기화)
+                        //--------------------------------------------------------------------------------
+                        $($that.block).css({
+                            height : $(window.top).height() - 1 + 'px',
+                            width : $(window.top).width() - 1 + 'px'
+                        });
+                        //--------------------------------------------------------------------------------
+                        // 블럭킹 사이즈 조정(document 크기에 맞춘다)
+                        //--------------------------------------------------------------------------------
+                        $($that.block).css({
+                            height : $(window.top.document).height() + 'px',
+                            width : $(window.top.document).width() - (IS_MSIE && !IS_IE11 ? WindowUtil.getScrollBarWidth() : 0) + 'px'
+                        });
+                        //--------------------------------------------------------------------------------
+                        $($that.message).stop().animate({
+                            top : $that.getPosition($that).top + 'px',
+                            left : $that.getPosition($that).left + 'px'
+                        }, 300, function() {
+                            $that.isStopScroll = false;
+                        });
+                    });
+                    //--------------------------------------------------------------------------------
+                    // ESC Key 이벤트
+                    //--------------------------------------------------------------------------------
+                    $(window.top.document).bind("keydown.block." + $that.options.messageStyle.zIndex, function(evt) {
+                        if ($that.options.esckey) {
+                            var keyCode = evt.which || evt.keyCode;
+                            //--------------------------------------------------------------------------------
+                            if (keyCode == 27) {
+                                if ($that.getLastMsg() === $that.message) {
+                                    if($($that.message).find("." + Message.btnClose).size() > 0) {
+                                        $($that.message).find("." + Message.btnClose).click();
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    //--------------------------------------------------------------------------------
+                    // callback
+                    //--------------------------------------------------------------------------------
+                    if(callback) {
+                        callback();
+                    }
+                });
+            }
+        },
+        hide: function(callback) {
+            var $that = this;
+            //--------------------------------------------------------------------------------
+            // block object remove
+            //--------------------------------------------------------------------------------
+            if(this.block) {
+                $(this.block).remove();
+            }
+            //--------------------------------------------------------------------------------
+            // message 처리
+            //--------------------------------------------------------------------------------
+            if(this.message) {
+                this.animation(this, false, function ($that) {
+                    $(window.top.document).unbind('mousemove.block.' + $that.options.messageStyle.zIndex);
+                    $(window.top.document).unbind('mouseup.block.' + $that.options.messageStyle.zIndex);
+                    $(window.top.document).unbind('keydown.block.' + $that.options.messageStyle.zIndex);
+                    $(window.top).unbind('scroll.block.' + $that.options.messageStyle.zIndex);
+                    $(window.top).unbind('orientationchange.block.' + $that.options.messageStyle.zIndex);
+                    $(window.top).unbind('resize.block.' + $that.options.messageStyle.zIndex);
+                    //--------------------------------------------------------------------------------
+                    if (!$that.getLastMsg()) {
+                        $(window.top.document).find('html').css({
+                            'overflow-y' : 'scroll',
+                            'margin-right' : 0 + 'px'
+                        });
+                    }
+                    //--------------------------------------------------------------------------------
+                    $that.setTabIndex();
+                    //--------------------------------------------------------------------------------
+                    try {
+                        if ($that.beforeFocus)
+                            $($that.beforeFocus).focus();
+                    }
+                    catch (e) {}
+                    //--------------------------------------------------------------------------------
+                    if (callback) {
+                        callback();
+                    }
+                });
+            }
+            else {
+                if(callback) {
+                    callback();
+                }
+            }
+            //--------------------------------------------------------------------------------
+            // current block instance remove.
+            //--------------------------------------------------------------------------------
+            var blockInstances = [];
+            $(window.top.blockInstances).each(function(index) {
+                if(this !== $that) {
+                    blockInstances.push(this);
+                }
+            });
+            window.top.blockInstances = blockInstances;
+        },
+        /** animation */
+        animation: function (block, show, callback) {
+            if(show) {
+                $(block.message).center().css({
+                    left: block.getPosition().left + 'px',
+                    top: block.getPosition().top + 'px'
+                });
+            }
+            else {
+                $(block.message).remove();
+            }
+            if (callback) {
+                callback(block);
+            }
+        },
+
+        /**
+         * 메세지 위치 반환
+         *
+         * @returns {top,left}
+         */
+        getPosition: function () {
+            var minTop = this.options.minTop > 0 ? this.options.minTop : 20;
+            var maxTop = this.options.maxTop > 0 ? this.options.maxTop : $(window.top.document).height() - $(this.message).height() - 10;
+            var minLeft = this.options.minLeft;
+            var maxLeft = this.options.maxLeft;
+
+            var top = ($(window.top).height() - $(this.message).height()) / 2 + $(window.top).scrollTop() + this.options.addTop;
+            var left = ($(window.top).width() - $(this.message).width()) / 2 + $(window.top).scrollLeft() + this.options.addLeft;
+
+            return {
+                top: (top < minTop ? minTop : top > maxTop ? maxTop : top),
+                left: (left < minLeft ? minLeft : left > maxLeft ? maxLeft : left)
+            };
+        },
+        /**
+         * 최상위 메세지 반환
+         *
+         * @returns message
+         */
+        getLastMsg: function() {
+            var message = null;
+            $(blockInstances).each(function (inx) {
+                if(this.message) {
+                    message = this.message;
+                }
+            });
+            return message;
+        },
+        /**
+         * 최상위 블럭 TabIndex 설정
+         */
+        setTabIndex: function() {
+            $(blockInstances).each(function (inx) {
+                $(this.message).find("div:first").removeAttr("tabindex");
+            });
+
+            if(this.getLastMsg()) {
+                $(this.getLastMsg()).find("div:first").attr("tabindex", "0");
+            }
+        }
+    };
+})(jQuery);

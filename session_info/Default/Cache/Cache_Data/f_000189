@@ -1,0 +1,1129 @@
+//================================================================================
+// 공통 스크립트
+// Validation 과 관련된 내용이 기술되어 있다.
+// (필수값 체크, 입력값제한 등)
+//--------------------------------------------------------------------------------
+// jQuery 1.8+ 버전 dependency
+//--------------------------------------------------------------------------------
+// 작성일자 : 2014.09.16
+// 작성자 : 김지민
+//================================================================================
+
+
+(function($) {
+    /**
+     * ECMAScript 5 Strict Mode.
+     */
+    "use strict";
+    /**
+     * 폼의 입력값 필터링과 유효성 검사 클래스.
+     *
+     * @class
+     */
+    ext.validation = function() {
+        this.isValid  = true;   // 유효성체크여부
+        this.alertMsg = "";     // 입력오류알림메시지
+        this.element  = null;   // 현재검증요소Element
+        this.capslock = false;  // [Caps Lock]KeyPress여부
+        //--------------------------------------------------------------------------------
+        // 필터 객체 초기화
+        //--------------------------------------------------------------------------------
+        this.filter.init();
+    };
+
+    ext.validation.prototype = {
+        filter: {
+            DOM_VK_CHAR_NOMAL: [],
+            DOM_VK_CHAR_SHIFT: [],
+            DOM_VK_KEY_DWON: [],
+            data: [
+                { name: "exc",   char: [null, undefined, "CANCEL", "HELP", "TAB", "CLEAR", "RETURN", "ENTER", "SHIFT", "CONTROL", "ALT", "PAUSE", "CAPS_LOCK", "CHINESE", "ESCAPE", "PAGE_UP", "PAGE_DOWN", "END", "HOME", "LEFT", "UP", "RIGHT", "DOWN", "PRINTSCREEN", "INSERT", "NUM_LOCK", "SCROLL_LOCK", "COMMAND"] },
+                { name: "del",   char: ["BACK_SPACE", "DELETE"] },
+                { name: "space", char: ["SPACE", " "] },
+                { name: "kor",   char: ["KOR", "ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ", "ㄲ", "ㄸ", "ㅃ", "ㅆ", "ㅉ", "ㅏ", "ㅑ", "ㅓ", "ㅕ", "ㅗ", "ㅛ", "ㅜ", "ㅠ", "ㅡ", "ㅣ", "ㅐ", "ㅔ", "ㅒ", "ㅖ"] },
+                { name: "num",   char: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] },
+                { name: "eng",   char: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"] },
+                { name: "spec",  char: ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "+", "-", ".", "/", ";", "=", ",", "`", "[", "\\", "]", ":", "<", "_", ">", "?", "~", "{", "|", "}"] }
+            ],
+            init: function() {
+                //--------------------------------------------------------------------------------
+                // 특수키(한/영전환키입력시[keyDown:229, keyUp:21], 한자키입력시[keyDown:25,keyUp:229])
+                //--------------------------------------------------------------------------------
+                this.DOM_VK_CHAR_NOMAL.push("CANCEL", "HELP", "BACK_SPACE", "TAB", "CLEAR", "RETURN", "ENTER", "SHIFT", "CONTROL", "ALT", "PAUSE", "CAPS_LOCK", "CHINESE", "ESCAPE", "SPACE", "PAGE_UP", "PAGE_DOWN", "END", "HOME", "LEFT", "UP", "RIGHT", "DOWN", "PRINTSCREEN", "INSERT", "DELETE", "NUM_LOCK", "SCROLL_LOCK", "COMMAND");
+                this.DOM_VK_CHAR_SHIFT.push("CANCEL", "HELP", "BACK_SPACE", "TAB", "CLEAR", "RETURN", "ENTER", "SHIFT", "CONTROL", "ALT", "PAUSE", "CAPS_LOCK", "CHINESE", "ESCAPE", "SPACE", "PAGE_UP", "PAGE_DOWN", "END", "HOME", "LEFT", "UP", "RIGHT", "DOWN", "PRINTSCREEN", "INSERT", "DELETE", "NUM_LOCK", "SCROLL_LOCK", "COMMAND");
+                this.DOM_VK_KEY_DWON.push("3", "6", "8", "9", "12", "13", "14", "16", "17", "18", "19", "20", "25", "27", "32", "33", "34", "35", "36", "37", "38", "39", "40", "44", "45", "46", "144", "145", "91");
+                //--------------------------------------------------------------------------------
+                // 숫자키(숫자패드키)
+                //--------------------------------------------------------------------------------
+                this.DOM_VK_CHAR_NOMAL.push("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "=", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+                this.DOM_VK_CHAR_SHIFT.push(")", "!", "@", "#", "$", "%", "^", "&", "*", "(", "+", "INSERT", "END", "DOWN", "PAGE_DOWN", "LEFT", "CLEAR", "RIGHT", "HOME", "UP", "PAGE_UP");
+                this.DOM_VK_KEY_DWON.push("48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "61", "96", "97", "98", "99", "100", "101", "102", "103", "104", "105");
+                //--------------------------------------------------------------------------------
+                // 문자키
+                //--------------------------------------------------------------------------------
+                this.DOM_VK_CHAR_NOMAL.push("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z");
+                this.DOM_VK_CHAR_SHIFT.push("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
+                this.DOM_VK_KEY_DWON.push("65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90");
+                //--------------------------------------------------------------------------------
+                // 기능키
+                //--------------------------------------------------------------------------------
+                this.DOM_VK_CHAR_NOMAL.push("F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12");
+                this.DOM_VK_CHAR_SHIFT.push("F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12");
+                this.DOM_VK_KEY_DWON.push("112", "113", "114", "115", "116", "117", "118", "119", "120", "121", "122", "123");
+                //--------------------------------------------------------------------------------
+                // 비문자(같은 key 라도 브라우저 별로 keyCode 가 조금씩 다름)
+                //--------------------------------------------------------------------------------
+                this.DOM_VK_CHAR_NOMAL.push(" ", "*", "+", "SEPARATOR", "-", ".", "/", "-", ";", "=", ",", "-", ".", "/", "`", "[", "\\", "]", "'");
+                this.DOM_VK_CHAR_SHIFT.push(" ", "*", "+", "SEPARATOR", "-", ".", "/", "_", ":", "+", "<", "_", ">", "?", "~", "{", "|", "}", "\"");
+                this.DOM_VK_KEY_DWON.push("32", "106", "107", "108", "109", "110", "111", "173", "186", "187", "188","189", "190", "191", "192", "219", "220", "221", "222");
+                //--------------------------------------------------------------------------------
+                // 한글
+                //--------------------------------------------------------------------------------
+                this.DOM_VK_CHAR_NOMAL.push("KOR", "ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ", "ㅏ", "ㅑ", "ㅓ", "ㅕ", "ㅗ", "ㅛ", "ㅜ", "ㅠ", "ㅡ", "ㅣ", "ㅐ", "ㅔ");
+                this.DOM_VK_CHAR_SHIFT.push("KOR", "ㄲ", "ㄴ", "ㄸ", "ㄹ", "ㅁ", "ㅃ", "ㅆ", "ㅇ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ", "ㅏ", "ㅑ", "ㅓ", "ㅕ", "ㅗ", "ㅛ", "ㅜ", "ㅠ", "ㅡ", "ㅣ", "ㅒ", "ㅖ");
+                this.DOM_VK_KEY_DWON.push("229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229", "229");
+                //--------------------------------------------------------------------------------
+                // 추가 필터 설정.
+                //--------------------------------------------------------------------------------
+                this.put("email",  this.get("num").char.concat(this.get("eng").char).concat("_", "-", "@", "."));
+                this.put("domain", this.get("num").char.concat(this.get("eng").char).concat("_", "-", "."));
+                this.put("date",   this.get("num").char.concat("-", "."));
+                this.put("float",  this.get("num").char.concat("-", "."));
+                this.put("money",  this.get("num").char.concat("-", ".", ","));
+            },
+            get: function(name) {
+                for(var inx in this.data) {
+                    if(this.data[inx].name == name) {
+                        return this.data[inx];
+                    }
+                }
+                //--------------------------------------------------------------------------------
+                return null;
+            },
+            put: function(name, char) {
+                this.data.push({
+                    name: name,
+                    char: char
+                });
+            },
+            char: function(keycode, shifted) {
+                for(var j in this.DOM_VK_KEY_DWON) {
+                    if(keycode == this.DOM_VK_KEY_DWON[j]) {
+                        return shifted ? this.DOM_VK_CHAR_SHIFT[j] : this.DOM_VK_CHAR_NOMAL[j];
+                    }
+                }
+                //--------------------------------------------------------------------------------
+                return null;
+            },
+            validkey: function(filters, keycode, shifted, capslock) {
+                for(var i in filters) {
+                    var char = (filters[i] == "eng" > -1 && capslock) ? this.char(keycode, !shifted) : this.char(keycode, shifted);
+                    //--------------------------------------------------------------------------------
+                    // 필터 데이터 조회 (임시 필터 : 입력한 데이터로 임시 필터 생성.)
+                    //--------------------------------------------------------------------------------
+                    var data = this.get(filters[i]) || {
+                            name: "temp",
+                            char: filters[i]
+                        };
+                    //--------------------------------------------------------------------------------
+                    if(char && data) {
+                        for(var k in data.char) {
+                            if(data.char[k] == char) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                //--------------------------------------------------------------------------------
+                return false;
+            },
+            validchar: function(filters, char) {
+                for(var i in filters) {
+                    var data = this.get(filters[i]) || {
+                            name : "temp",
+                            char : filters[i]
+                        };
+                    //--------------------------------------------------------------------------------
+                    if(data) {
+                        for(var k in data.char) {
+                            if(data.char[k] == char) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                //--------------------------------------------------------------------------------
+                return false;
+            },
+            nocheck: function(evt, exdel) {
+                var keyCode = evt.which || evt.keyCode || evt.charCode;
+                var filters = !exdel ? ["exc", "del"] : ["exc"];
+                //--------------------------------------------------------------------------------
+                return this.validkey(filters, keyCode, evt.shiftKey);
+            }
+        },
+        message : {
+            require:     "#title# 필수 입력 항목 입니다.",
+            email:       "#title#의 형식이 올바르지 않습니다.",
+            domain:      "#title#의 도메인 형식이 올바르지 않습니다.",
+            date:        "#title#의 날자 형식이 올바르지 않습니다.",
+            mindate:     "#title# {0} 보다 커야 합니다.",
+            maxdate:     "#title# {0} 보다 작아야 합니다.",
+            rangedate:   "#title# {0}과 {1}사이의 날자를 입력하세요.",
+            num:         "#title# 숫자만 입력 가능 합니다.",
+            minlength:   "#title# 적어도 {0}자는 입력해야 합니다.",
+            minbyte:     "#title# 적어도 {0}Byte 는 입력해야 합니다.",
+            minsize:     "#title# {0} 이상으로 입력해 주세요.",
+            maxlength:   "#title# {0}자 이상은 입력할 수 없습니다.",
+            maxbyte:     "#title# {0}Byte 이상은 입력할 수 없습니다.",
+            maxsize:     "#title# {0} 이하로 입력해 주세요.",
+            rangelength: "#title# {0}자 이상 {1}자 이하로 입력해 주세요.",
+            rangebyte:   "#title# {0}Byte 이상 {1}Byte 이하로 입력해 주세요.",
+            rangesize:   "#title# {0}에서 {1}사이의 값을 입력하세요.",
+            fixlength:   "#title# {0}자를 입력해 주세요.",
+            fixbyte:     "#title# {0}Byte 를 입력해 주세요.",
+            fixsize:     "#title# {0}을 입력해 주세요.",
+            fixsecu:     "#title#를 입력해 주세요.",
+            agree:       "#title# 필수 선택 항목 입니다.",
+            format : function(filter, title, params) {
+                var message = eval("this." + filter).replace(new RegExp("#title#", "g"), title);
+                //--------------------------------------------------------------------------------
+                $.each(typeof params == "object" ? params : [params], function(i, s) {
+                    message = message.replace(new RegExp("\\{" + i + "\\}", "g"), s);
+                });
+                //--------------------------------------------------------------------------------
+                return message;
+            }
+        },
+        setVal: function(obj, val) {
+            //--------------------------------------------------------------------------------
+            // 비밀번호 타입은 값을 변형 시키지 않는다.
+            //--------------------------------------------------------------------------------
+            if(obj.type == "password") {
+                return;
+            }
+            //--------------------------------------------------------------------------------
+            $(obj).val(val);
+        },
+        initFilter: function(form) {
+            var $that = this;
+            this.isValid = false;
+            //--------------------------------------------------------------------------------
+            // FOCUS in/out, readonly element 색상 처리
+            //--------------------------------------------------------------------------------
+            $(form).find("input").each(function(inx) {
+                var bgColor = $(this).css("background");
+                //--------------------------------------------------------------------------------
+                if(!bgColor) {
+                    bgColor = DEFAULT_COLOR;
+                }
+                //--------------------------------------------------------------------------------
+                if($(this).attr("readonly")) {
+                    $(this).css("background", READONLY_COLOR);
+                }
+                else {
+                    $(this).on("focus", function() {
+                        $(this).css("background", FOCUS_COLOR);
+                    });
+                    //--------------------------------------------------------------------------------
+                    $(this).on("blur", function() {
+                        $(this).css("background", bgColor);
+                    });
+                }
+            });
+            $(form).find(":input").filter("[class*=filter]").each(function(inx) {
+                $that.element = this;  // 현재요소객체
+                //--------------------------------------------------------------------------------
+                var cls = ElementUtil.getClassName(this, "filter");
+                //--------------------------------------------------------------------------------
+                var filterArray = cls.replace(/\[(.*?)\]/gi, "").replace(/(filter+(:)?|(:)?esc)/ig, "").split(":");
+                var filters = [];
+                //--------------------------------------------------------------------------------
+                for(var i in filterArray) {
+                    if($that.filter.get(filterArray[i])) {
+                        filters.push(filterArray[i]);  // 현재 적용 가능한 필터만 등록.
+                    }
+                }
+                //--------------------------------------------------------------------------------
+                // ENTER 키 입력 설정
+                //--------------------------------------------------------------------------------
+                if(cls.indexOf(":enter") > -1) {
+                    var funcName = StringUtil.fromToSubstr(cls, ":enter[", "]");
+                    //--------------------------------------------------------------------------------
+                    if(funcName && funcName !== "") {
+                        try {
+                            var enterKeyFunc = eval(funcName);
+                            //--------------------------------------------------------------------------------
+                            if($.isFunction(enterKeyFunc)) {
+                                $(this).bind("keydown", function(evt) {
+                                    var inputChar = $that.filter.char((evt.which || evt.keyCode || evt.charCode), evt.shiftKey);
+                                    //--------------------------------------------------------------------------------
+                                    if(inputChar === "RETURN") {
+                                        enterKeyFunc();
+                                    }
+                                    else {
+                                        return true;
+                                    }
+                                });
+                            }
+                        }
+                        catch(ex) {
+                            console.log("[ERROR:" + ex.name + "] " + ex.message);
+                        }
+                    }
+                }
+                //--------------------------------------------------------------------------------
+                // escape charter filter
+                //--------------------------------------------------------------------------------
+                if(cls.indexOf(":esc") > -1) {
+                    var str   = StringUtil.fromToSubstr(cls, ":esc[", "]");
+                    var chars = [];
+                    //--------------------------------------------------------------------------------
+                    for(var i = 0; i < str.length; i++) {
+                        chars.push(str.charAt(i));
+                    }
+                    //--------------------------------------------------------------------------------
+                    $that.filter.put("esc[" + str + "]", chars);
+                    filters.push("esc[" + str + "]");
+                }
+                //--------------------------------------------------------------------------------
+                // 범위 설정값 [n,n]
+                //--------------------------------------------------------------------------------
+                var range = cls.indexOf("filter[") > -1 ? StringUtil.fromToSubstr(cls, "filter[", "]").split(",") : "";
+                //--------------------------------------------------------------------------------
+                var minlen = $(this).attr("minlength");
+                var maxlen = $(this).attr("maxlength");
+                var minlenhan = -1;
+                var maxlenhan = -1;
+                var lengthType = "length";
+                //--------------------------------------------------------------------------------
+                if(range.length) {
+                    // 입력 범위가 [n]처럼 하나라면 최대값을 나타낸다.
+                    if(range.length == 1) {
+                        var first = range[0];
+                        range[0] = "0";
+                        range[1] = first;
+                        range[2] = "length";
+                    }
+                    else if (range.length == 2) {
+                        var first = range[0];
+                        var second = range[1];
+                        range[0] = !isNaN(second.substring(0, 1)) ? first : "0";
+                        range[1] = !isNaN(second.substring(0, 1)) ? second : first;
+                        range[2] = !isNaN(second.substring(0, 1)) ? "length" : second;
+                    }
+                    //--------------------------------------------------------------------------------
+                    var rmin = range[0].split(":");
+                    minlen = rmin[0] && !isNaN(rmin[0]) ? parseInt(rmin[0]) : 0;
+                    //--------------------------------------------------------------------------------
+                    if (rmin.length > 1) {  // 한글 최소길이.
+                        minlenhan = rmin[1] && !isNaN(rmin[1]) ? parseInt(rmin[1]) : -1;
+                    }
+                    //--------------------------------------------------------------------------------
+                    var rmax = range[1].split(":");
+                    maxlen = rmax[0] && !isNaN(rmax[0]) ? parseInt(rmax[0]) : 0;
+                    //--------------------------------------------------------------------------------
+                    if (rmax.length > 1) {  // 한글 최대길이.
+                        maxlenhan = rmax[1] && !isNaN(rmax[1]) ? parseInt(rmax[1]) : -1;
+                    }
+                    //--------------------------------------------------------------------------------
+                    lengthType = range[2] ? range[2] : lengthType;
+                }
+                //--------------------------------------------------------------------------------
+                $(this).attr("lengthType", lengthType);  // 길이 타입 속성 설정.
+                //--------------------------------------------------------------------------------
+                minlen = minlen ? parseInt(minlen) : -1;
+                maxlen = maxlen ? parseInt(maxlen) : -1;
+                //--------------------------------------------------------------------------------
+                var title = this.title ? this.title : this.alt ? this.alt : this.name ? this.name : this.id;  // title 설정
+                //--------------------------------------------------------------------------------
+                // 실수
+                //--------------------------------------------------------------------------------
+                if(cls.indexOf(":float") > -1) {
+                    $(this).bind("keydown", function(evt) {
+                        var inputChar = $that.filter.char((evt.which || evt.keyCode || evt.charCode), evt.shiftKey);
+                        //--------------------------------------------------------------------------------
+                        if($(this).val().length != 0 && inputChar === "-") {
+                            $that.eventStop(evt);
+                        }
+                    });
+                    $(this).bind("keyup", function(evt) {
+                        if($(this).val().indexOf(".") == 0) {
+                            $(this).val("0" + $(this).val());
+                        }
+                        //--------------------------------------------------------------------------------
+                        if($(this).val().indexOf(".") > -1) {
+                            $that.setVal(this, $(this).val().substring(0, $(this).val().indexOf(".")) + "." + $(this).val().substring($(this).val().indexOf(".") + 1).replace(/\./gi, ""));
+                        }
+                        //--------------------------------------------------------------------------------
+                        var point = StringUtil.fromToSubstr(cls, ":float[", "]");  // 소수점자릿수
+                        //--------------------------------------------------------------------------------
+                        if(point != "" && $(this).val().indexOf(".") > -1) {
+                            $that.setVal(this, $(this).val().substring(0, $(this).val().indexOf(".")) + "." + $(this).val().substr($(this).val().indexOf(".") + 1, point));
+                        }
+                    });
+                }
+                //--------------------------------------------------------------------------------
+                // 날짜
+                //--------------------------------------------------------------------------------
+                if(cls.indexOf(":date") > -1) {
+                    var optDt = StringUtil.fromToSubstr(cls, ":date[", "]").split(",");
+                    //--------------------------------------------------------------------------------
+                    optDt[0] = optDt[0] ? optDt[0] : null;
+                    optDt[1] = optDt[1] ? optDt[1] : null;
+                    optDt[2] = optDt[2] ? optDt[2] : null;
+                    optDt[3] = optDt[3] ? optDt[3] : "";
+                    //--------------------------------------------------------------------------------
+                    maxlen = maxlen == -1 ? (8 + optDt[3].length+1) : maxlen;
+                    //--------------------------------------------------------------------------------
+                    // 기본 설정 일자 있다면 셋팅.
+                    //--------------------------------------------------------------------------------
+                    if(optDt[2]) {
+                        var date = StringUtil.toDate(DateUtil.setDate(optDt[2]), optDt[3]);
+                        $that.setVal(this, date);
+                    }
+                    //--------------------------------------------------------------------------------
+//                    $(this).bind("keydown", function(evt) {
+                    $(this).bind("keyup", function(evt) {
+                        $that.element = this;
+                        //--------------------------------------------------------------------------------
+                        if($(this).attr("readonly")) {
+                            return true;
+                        }
+                        //--------------------------------------------------------------------------------
+                        if($that.filter.nocheck(evt, false)) {
+                            return true;
+                        }
+                        //--------------------------------------------------------------------------------
+//                        var keyCode = evt.which || evt.keyCode || evt.charCode;
+//                        var sKey    = String.fromCharCode(keyCode);
+//                        var num     = StringUtil.toNumber($(this).val());
+                        //--------------------------------------------------------------------------------
+                        // month 첫 자리가 1 보다 클때 자동으로 "0"을 앞에 붙인다.
+                        //--------------------------------------------------------------------------------
+//                        if(num.length == 4 && parseInt(sKey) > 1) {
+//                            sKey = "0" + sKey;
+//                            $that.setVal(this, $(this).val() + "0");
+//                        }
+                        //--------------------------------------------------------------------------------
+                        // day 첫 자리가 3 보다 클때 자동으로 "0"을 앞에 붙인다.
+                        //--------------------------------------------------------------------------------
+//                        if(num.length == 6 && parseInt(sKey) > 3) {
+//                            sKey = "0" + sKey;
+//                            $that.setVal(this, $(this).val() + "0");
+//                        }
+                        //--------------------------------------------------------------------------------
+//                        var val = num + sKey;
+                        var val = StringUtil.toNumber($(this).val());
+                        //--------------------------------------------------------------------------------
+                        if(!ValidUtil.validDate(val)) {
+                            $that.eventStop(evt);
+                        }
+                        //--------------------------------------------------------------------------------
+                        var alertMsg = "";
+                        //--------------------------------------------------------------------------------
+                        if(val.length >= 8) {
+                            //--------------------------------------------------------------------------------
+                            // 날자 범위 검사.
+                            //--------------------------------------------------------------------------------
+                            var dateMsg = ValidUtil.fromToDate(this, optDt[0], optDt[1]);
+//                            var dateMsg = ValidUtil.fromToDate(val, optDt[0], optDt[1]);
+                            //--------------------------------------------------------------------------------
+                            if (dateMsg[0] != "" && dateMsg[1] != "") {
+                                alertMsg = $that.message.format("rangedate", StringUtil.un(title), dateMsg);
+                            }
+                            else if (dateMsg[0] != "") {
+                                alertMsg = $that.message.format("mindate", StringUtil.un(title), dateMsg[0]);
+                            }
+                            else if (dateMsg[1] != "") {
+                                alertMsg = $that.message.format("maxdate", StringUtil.un(title), dateMsg[1]);
+                            }
+                            //--------------------------------------------------------------------------------
+                            if(alertMsg != "") {
+                                $that.element.blur(); // 더이상 입력 금지.
+                                //--------------------------------------------------------------------------------
+                                Message.valid(alertMsg, function() {
+                                    $(this).delayTime(300, function() {
+                                        $that.element.focus();
+                                    });
+                                });
+                                //--------------------------------------------------------------------------------
+                                $that.eventStop(evt);
+                            }
+                        }
+                    });
+                    //--------------------------------------------------------------------------------
+                    $(this).bind("keyup", function(evt) {
+                        if($that.filter.nocheck(evt, true)) {
+                            return true;
+                        }
+                        //--------------------------------------------------------------------------------
+                        $that.setVal(this, StringUtil.toDate($(this).val(), optDt[3]));
+                    });
+                }
+                //--------------------------------------------------------------------------------
+                // 금액
+                //--------------------------------------------------------------------------------
+                if(cls.indexOf(":money") > -1) {
+                    $(this).css("text-align", "right");
+                    //--------------------------------------------------------------------------------
+                    $that.setVal(this, StringUtil.toMoney($(this).val()));
+                    //--------------------------------------------------------------------------------
+                    $(this).on("focus", function() {
+                        this.select();
+                    });
+                    //--------------------------------------------------------------------------------
+                    $(this).bind("keyup", function(evt) {
+                        $that.setVal(this, StringUtil.toMoney($(this).val()));
+                    });
+                }
+                //--------------------------------------------------------------------------------
+                // 대문자
+                //--------------------------------------------------------------------------------
+                if(cls.indexOf(":upper") > 0) {
+                    $(this).css("text-transform", "uppercase");
+                    $(this).bind("keyup", function(evt) {
+                        if ($that.filter.nocheck(evt, false)) {
+                            return true;
+                        }
+                        //--------------------------------------------------------------------------------
+                        $that.setVal(this, $(this).val().toUpperCase());
+                    });
+                }
+                //--------------------------------------------------------------------------------
+                // 소문자
+                //--------------------------------------------------------------------------------
+                if(cls.indexOf(":lower") > 0) {
+                    $(this).css("text-transform", "lowercase");
+                    $(this).bind("keyup", function(evt) {
+                        if($that.filter.nocheck(evt, false)) {
+                            return true;
+                        }
+                        //--------------------------------------------------------------------------------
+                        $that.setVal(this, $(this).val().toLowerCase());
+                    });
+                }
+                //--------------------------------------------------------------------------------
+                // 한글
+                //--------------------------------------------------------------------------------
+                if(cls.indexOf(":kor") > -1) {
+                    $(this).css("ime-mode", "active");
+                }
+                else {
+                    // keydown 시 한/영 전환 keycode 가 299 로 한글로 인식해서 필터링에 걸려서 전환이 안되는 문제를 미연에 방지하기 위해서
+                    // 영문 입력 필터는 ime-mode 를 disabled 시켜 원천적으로 한글 입력을 방지한다
+                    if(~cls.indexOf(":eng") ||
+                        ~cls.indexOf(":num") ||
+                        ~cls.indexOf(":float") ||
+                        ~cls.indexOf(":date") ||
+                        ~cls.indexOf(":cal") ||
+                        ~cls.indexOf(":email") ||
+                        ~cls.indexOf(":domain") ||
+                        ~cls.indexOf(":esc")) {
+                        $(this).css("ime-mode", "disabled");
+                    }
+                }
+                //--------------------------------------------------------------------------------
+                // 우측정렬
+                //--------------------------------------------------------------------------------
+                if(cls.indexOf(":right") > 0) {
+                    $(this).css("text-align", "right");
+                }
+                //--------------------------------------------------------------------------------
+                // 중앙정렬
+                //--------------------------------------------------------------------------------
+                if(cls.indexOf(":center") > 0) {
+                    $(this).css("text-align", "center");
+                }
+                //--------------------------------------------------------------------------------
+                // 달력
+                //--------------------------------------------------------------------------------
+                if(cls.indexOf(":cal") > 0) {
+                    var delim = StringUtil.fromToSubstr(cls, ":cal[", "]");
+                    //--------------------------------------------------------------------------------
+//                    var calHtml = '<a href="#"><img src="' + CONTEXT_PATH + '/docs/img/img_calendar.png" /></a>';
+//                    //--------------------------------------------------------------------------------
+//                    $(calHtml).insertAfter($(this));
+                    //--------------------------------------------------------------------------------
+                    var calOptions = {
+                        showOn: "both",
+                        dateFormat: "yy" + delim + "mm" + delim + "dd",
+                        buttonImage: CONTEXT_PATH + "/docs/img/btn_calendar.png",
+                        buttonImageOnly: true,
+                        altFormat: "yy" + delim + "mm" + delim + "dd",
+                        prevText: "이전달",
+                        nextText: "다음달",
+                        monthNames:      ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"],
+                        monthNamesShort: ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"],
+                        dayNames:        ["일","월","화","수","목","금","토"],
+                        dayNamesShort:   ["일","월","화","수","목","금","토"],
+                        dayNamesMin:     ["일","월","화","수","목","금","토"],
+                        showMonthAfterYear: true,
+                        yearSuffix: "년",
+                        showAnim: "fadeIn",
+                        onSelect: function(dateText, inst) {
+                            inst.trigger.attr("alt", dateText).attr("title", dateText);
+//                            $(this).keyup();
+                        }
+                    };
+                    //--------------------------------------------------------------------------------
+                    $(this).datepicker(calOptions);
+                    //--------------------------------------------------------------------------------
+                    // 달력아이콘 처리
+                    //--------------------------------------------------------------------------------
+                    $(this).next().css("cursor", "pointer").attr("alt", $(this).val()).attr("title", $(this).val());
+                }
+                //--------------------------------------------------------------------------------
+                // 최대길이검사
+                //--------------------------------------------------------------------------------
+                if(maxlen > -1) {
+                    if(lengthType == "size") {  // 숫자 크기로 설정시
+                        var min = minlen;  // 최소 숫자 크기 설정
+                        var max = maxlen;  // 최대 숫자 크기 설정
+                        //--------------------------------------------------------------------------------
+                        minlen = (minlen > -1) ? String(minlen).length + ((String(minlen).length - 1) / 3) : minlen;
+                        maxlen = (maxlen > -1) ? String(maxlen).length + ((String(maxlen).length - 1) / 3) : maxlen;
+                        //--------------------------------------------------------------------------------
+                        if(min > -1) {
+                            $(this).attr("min", min);
+                        }
+                        //--------------------------------------------------------------------------------
+                        if(max > -1) {
+                            $(this).attr("max", max);
+                        }
+                        //--------------------------------------------------------------------------------
+                        $(this).bind("keyup", function(evt) {
+                            $that.element = this;
+                            //--------------------------------------------------------------------------------
+                            if($that.filter.nocheck(evt, false)) {
+                                return true;
+                            }
+                            //--------------------------------------------------------------------------------
+                            var val = StringUtil.toNumber($(this).val());
+                            var alertMsg = "";
+                            //--------------------------------------------------------------------------------
+                            if(max > -1 && parseInt(val) > max) {  // 길이가 아니라 값으로 최대값 구한다.
+                                $that.element.blur(); // 더이상 입력 금지
+                                alertMsg = $that.message.format("maxsize", StringUtil.un(title), max);
+                                //--------------------------------------------------------------------------------
+                                Message.valid(alertMsg, function() {
+                                    $(this).delayTime(300, function() {
+                                        $that.element.focus();
+                                    });
+                                });
+                                //--------------------------------------------------------------------------------
+                                $that.eventStop(evt);
+                            }
+                        });
+                    }
+                    else {
+                        $(this).bind("keydown", function(evt) {
+                            $that.element = this;
+                            //--------------------------------------------------------------------------------
+                            if($(this).attr("readonly")) {
+                                return true;
+                            }
+                            //--------------------------------------------------------------------------------
+                            if($that.filter.nocheck(evt, false)) {
+                                return true;
+                            }
+                            //--------------------------------------------------------------------------------
+                            if($(this).val().length == 0) {
+                                return;
+                            }
+                            //--------------------------------------------------------------------------------
+                            //var val = $(this).val();
+                            var val = (cls.indexOf(":money") > -1) ? StringUtil.stripCommas($(this).val()) : $(this).val();
+                            var isHan = StringUtil.isHangul(val);
+                            //--------------------------------------------------------------------------------
+                            if(cls.indexOf(":full") > -1) {  // 반각문자를 전각문자로 변환. 모두 숫자면 제외.
+                                val = StringUtil.convert2ByteCharToString(val, cls.indexOf(':fullall') == -1);
+                            }
+                            //--------------------------------------------------------------------------------
+                            //var len = (lengthType == "byte") ? StringUtil.chkInputByte(val) : val.length;
+                            var len = (lengthType == "byte") ? StringUtil.chkInputByte(val) : StringUtil.stripCommas(val).length;
+                            //--------------------------------------------------------------------------------
+                            if(isHan && maxlenhan > -1 && len > maxlenhan) {
+                                $that.eventStop(evt);
+                                $(this).blur();
+                                $that.setVal(this, (lengthType == "byte") ? StringUtil.getInputByte(val, maxlenhan) : val.substring(0, maxlenhan));
+                                $(this).focus();
+                            }
+                            else if(len > maxlen) {
+                                $that.eventStop(evt);
+                                $(this).blur();
+                                //--------------------------------------------------------------------------------
+                                if(cls.indexOf(":money") > -1) {
+                                    $that.setVal(this, StringUtil.formatCommas(val.substring(0, maxlen)));
+                                }
+                                else {
+                                    $that.setVal(this, (lengthType == "byte") ? StringUtil.getInputByte(val, maxlen) : val.substring(0, maxlen));
+                                }
+                                //--------------------------------------------------------------------------------
+                                $(this).focus();
+                            }
+                        });
+                        //--------------------------------------------------------------------------------
+                        $(this).bind("keyup blur", function(evt) {
+                            $that.element = this;
+                            //var val = $(this).val();
+                            var val = (cls.indexOf(":money") > -1) ? StringUtil.stripCommas($(this).val()) : $(this).val();
+                            var isHan = StringUtil.isHangul(val);
+                            //--------------------------------------------------------------------------------
+                            if($(this).attr("readonly")) {
+                                return true;
+                            }
+                            //--------------------------------------------------------------------------------
+                            if(cls.indexOf(":full") > -1) {
+                                val = StringUtil.convert2ByteCharToString(val, cls.indexOf(":fullall") == -1);
+                            }
+                            //--------------------------------------------------------------------------------
+                            var len = (lengthType == "byte") ? StringUtil.chkInputByte(val) : val.length;
+                            var max = isHan && maxlenhan > -1 ? maxlenhan : maxlen > -1 ? maxlen : -1;
+                            //--------------------------------------------------------------------------------
+                            if(max > -1) {  // 붙여 넣기 시 길이체크.
+                                if(len > max) {
+                                    var msgmaxlen = isHan && maxlenhan > -1 ? "영문 " + maxlen + " (한글 " + maxlenhan + ")" : maxlen;
+                                    var alertMsg = $that.message.format("max" + lengthType, StringUtil.un(title), msgmaxlen);
+//                                    $that.element.blur(); // 입력금지
+                                    //--------------------------------------------------------------------------------
+//                                    Message.valid(alertMsg, function(isOk) {
+//                                        $(this).delayTime(300, function() {
+//                                            $that.element.focus();
+//                                        });
+//                                    });
+                                }
+                                if(evt.type == "blur") {
+                                    if(cls.indexOf(":money") > -1) {
+                                        $that.setVal(this, StringUtil.formatCommas(val));
+                                    }
+                                    else {
+                                        $that.setVal(this, (lengthType == "byte") ? StringUtil.getInputByte(val, max) : val.substring(0, max));
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+                //--------------------------------------------------------------------------------
+                // 최소,최대 입력값 설정
+                //--------------------------------------------------------------------------------
+                if(minlen > -1) {
+                    $(this).attr("minlength", minlen);
+                }
+                if(maxlen > -1) {
+                    $(this).attr("maxlength", maxlen);
+                }
+                //--------------------------------------------------------------------------------
+                // 한글 최소,최대 입력값 설정
+                //--------------------------------------------------------------------------------
+                if(minlenhan > -1) {
+                    $(this).attr("minlenhan", minlenhan);
+                }
+                if(maxlenhan > -1) {
+                    $(this).attr("maxlenhan", maxlenhan);
+                }
+                //--------------------------------------------------------------------------------
+                // keypress 는 KeyAscii값 받아옴. 영문, 숫자 등 에서만 이벤트가 발생. 비문자와 한글 에서는 이벤트가 발생하지 않음
+                // keydown 은 KeyCode값 받아옴. 거의 모든 키에서 이벤트가 발생. 하지만 keyCode 값이 숫자/특수문자 구분이 없고 한글은 무조건 229 반환
+                // keydown 체크 통과 후 실제 입력 문자로 한번더 필터링 체크(mobile 에서는 키배열이 틀려서 실제 입력값으로 다시 체크)
+                //--------------------------------------------------------------------------------
+                $(this).bind("keydown keypress keyup", function(evt) {
+                    if(filters.length == 0) {
+                        return;
+                    }
+                    //--------------------------------------------------------------------------------
+                    $that.element = this;
+                    //--------------------------------------------------------------------------------
+                    var keyCode = evt.which || evt.keyCode || evt.charCode;
+                    var charCode = String.fromCharCode(evt.which || evt.keyCode || evt.charCode);
+                    //--------------------------------------------------------------------------------
+                    // 모바일은 한글이 0 으로 입력되므로 229 로 변환
+                    //--------------------------------------------------------------------------------
+                    keyCode = keyCode == 0 ? 229 : keyCode;
+                    //--------------------------------------------------------------------------------
+                    // Ctrl + C , Ctrl + V
+                    //--------------------------------------------------------------------------------
+                    if(evt.ctrlKey && keyCode == 67 || evt.ctrlKey && keyCode == 86) {
+                        return true;
+                    }
+                    //--------------------------------------------------------------------------------
+                    if($that.filter.nocheck(evt, false)) {
+                        return true;
+                    }
+                    //--------------------------------------------------------------------------------
+                    // 입력값 필터링.
+                    //--------------------------------------------------------------------------------
+                    if(evt.type == "keydown" || evt.type == "keypress") {
+                        if(evt.type == "keydown") {
+                            // 한/영 전환시 229 가 막혀 있어서 안된다면 검토.
+                            $that.isValid = $that.filter.validkey(filters, keyCode, evt.shiftKey, $that.capslock);
+                        }
+                        else if($that.isValid) {
+                            $that.isValid = $that.filter.validchar(filters, charCode);
+                            // keydown 체크 통과 후 실제 입력문자로 한번더 필터링 체크. IME-MODE가 IE에서만 작동하기 때문에 타 브라우저의 경우 아래코드를 설정
+                            if(!$that.isValid && keyCode != 21 && keyCode != 229) {
+                                if(cls.indexOf("eng") == -1 && cls.indexOf("kor") > -1) {
+                                    $that.element.blur(); // 입력금지
+                                    //--------------------------------------------------------------------------------
+//                                    Message.valid("한글을 입력해 주세요.", function() {
+                                    $that.element.focus();
+//                                    });
+                                }
+                                else if (cls.indexOf("eng") > -1 && cls.indexOf("kor") == -1) {
+                                    $that.element.blur();
+                                    //--------------------------------------------------------------------------------
+//                                    Message.valid("영문을 입력해 주세요.", function() {
+                                    $that.element.focus();
+//                                    });
+                                }
+                            }
+                        }
+                        //--------------------------------------------------------------------------------
+                        if(!$that.isValid) {
+                            if(IS_FIREFOX) {
+                                this.blur();  // firefox 에서 eventStop 이 되지 않아서 blur,focus 해줌.
+                            }
+                            //--------------------------------------------------------------------------------
+                            $that.eventStop(evt);
+                            //--------------------------------------------------------------------------------
+                            if(IS_FIREFOX) {
+                                setTimeout(function () {
+                                    $($that.element).focus();
+                                }, 100);
+                            }
+                        }
+                    }
+                    else if(evt.type == "keyup") {
+                        if((evt.ctrlKey && keyCode == 67) || (evt.ctrlKey && keyCode == 86) || (IS_MAC && keyCode == 91)) {
+                            // Ctrl + C , Ctrl + V, (Mac 은 91 이 commond key code)
+                            return true;
+                        }
+                        //--------------------------------------------------------------------------------
+                        // 한/영전환키입력시 [KeyDown:229, KeyUp:21], 한자키입력시 [KeyDown:25, KeyUp:229]
+                        // @주의! : 한글은 keydown 일때는 모두 229 이지만 keyup 일때는 각 영문 키코드 값을 반환
+                        // 한/영 알림 메세지는 ime-mode(한글 입력모드) 가 적용되지 않는 브라우저(Chorme) 에서 아래 코드로 걸러준다.
+                        //--------------------------------------------------------------------------------
+                        if(!$that.isValid && keyCode != 21 && keyCode != 229) {
+                            if(cls.indexOf("eng") == -1 && cls.indexOf("kor") > -1) {
+                                $that.element.blur(); // 입력금지
+                                //--------------------------------------------------------------------------------
+//                                Message.valid("한글을 입력해 주세요.", function() {
+                                $that.element.focus();
+//                                });
+                            }
+                            else if(cls.indexOf("eng") > -1 && cls.indexOf("kor") == -1) {
+                                $that.element.blur();
+                                //--------------------------------------------------------------------------------
+//                                Message.valid("영문을 입력해 주세요.", function() {
+                                $that.element.focus();
+//                                });
+                            }
+                        }
+                    }
+                });
+            });
+            //--------------------------------------------------------------------------------
+            // 전역 keypress 이벤트.
+            //--------------------------------------------------------------------------------
+            $(document).bind("keypress", function(evt) {
+                var s = String.fromCharCode(evt.which || evt.keyCode || evt.charCode);
+                if (s.toUpperCase() === s && s.toLowerCase() !== s && !evt.shiftKey) {
+//                    if($that.capslock == null) {
+//                        $that.element.blur(); // 입력 금지.
+//                        //--------------------------------------------------------------------------------
+//                        Message.valid("Caps Lock 이 켜져 있습니다.", function() {
+//                            $that.element.focus();
+//                        });
+//                    }
+                    //--------------------------------------------------------------------------------
+                    $that.capslock = true;
+                }
+                else {
+                    $that.capslock = false;
+                }
+            });
+            //--------------------------------------------------------------------------------
+            // 전역 keyup 이벤트.
+            //--------------------------------------------------------------------------------
+            $(document).bind("keyup", function(evt) {
+                var keyCode = evt.which || evt.keyCode || evt.charCode;
+                //--------------------------------------------------------------------------------
+                if(keyCode == 20) {
+                    $that.capslock = null;
+                }
+            });
+        },
+        validate: function(form, filter) {
+            form = getForm(form);
+            //--------------------------------------------------------------------------------
+            // 유효성 검증 여부.
+            //--------------------------------------------------------------------------------
+            if(!IS_VALIDATE) {
+                return true;
+            }
+            //--------------------------------------------------------------------------------
+            var $that = this;
+            //--------------------------------------------------------------------------------
+            this.isValid = true;
+            this.alertMsg = "";
+            //--------------------------------------------------------------------------------
+            $(form).find(":input").filter('[class*=filter]').filter(filter || '*').each(function(inx) {
+                //--------------------------------------------------------------------------------
+                // 메세지는 한번만 띄운다.
+                //--------------------------------------------------------------------------------
+                if(!$that.isValid) {
+                    return;
+                }
+                //--------------------------------------------------------------------------------
+                // 보이지 않는 요소는 검증하지 않는다
+                //--------------------------------------------------------------------------------
+                if($.expr.filters.hidden(this)) {
+                    return;
+                }
+                //--------------------------------------------------------------------------------
+                $that.element = this;  // 현재 필드.
+                var cls = ElementUtil.getClassName(this, "filter");
+                var lengthType = $(this).attr("lengthType") || "length";  // 입력 범위 type
+                //--------------------------------------------------------------------------------
+                // 최소, 최대 길이
+                //--------------------------------------------------------------------------------
+                var minlen = !isNaN($(this).attr("minlength")) ? parseInt($(this).attr("minlength")) : -1;
+                var maxlen = !isNaN($(this).attr("maxlength")) ? parseInt($(this).attr("maxlength")) : -1;
+                //--------------------------------------------------------------------------------
+                // 한글 최소, 최대 길이
+                //--------------------------------------------------------------------------------
+                var minlenhan = !isNaN($(this).attr("minlenhan")) ? parseInt($(this).attr("minlenhan")) : -1;
+                var maxlenhan = !isNaN($(this).attr("maxlenhan")) ? parseInt($(this).attr("maxlenhan")) : -1;
+                //--------------------------------------------------------------------------------
+                // 최소, 최대 숫자 크기
+                //--------------------------------------------------------------------------------
+                var min = !isNaN($(this).attr("min")) ? parseInt($(this).attr("min")) : -1;
+                var max = !isNaN($(this).attr("max")) ? parseInt($(this).attr("max")) : -1;
+                //--------------------------------------------------------------------------------
+                // title 설정
+                //--------------------------------------------------------------------------------
+                var title = this.title ? this.title : this.alt ? this.alt : this.name ? this.name : this.id;
+                //--------------------------------------------------------------------------------
+                // 반각문자를 전각문자로 변환(모두숫자면제외)
+                //--------------------------------------------------------------------------------
+                if(cls.indexOf(":full") > -1) {
+                    $that.setVal(this, StringUtil.convert2ByteCharToString($(this).val(), cls.indexOf(":fullall") == -1));
+                }
+                //--------------------------------------------------------------------------------
+                var value = $(this).val();  // 입력값
+                //--------------------------------------------------------------------------------
+                // 날자와 금액 포멧 삭제
+                //--------------------------------------------------------------------------------
+                if(cls.indexOf(":date") > -1 || cls.indexOf(":money") > -1) {
+                    value = StringUtil.toNumber(value);
+                }
+                //--------------------------------------------------------------------------------
+                if(cls.indexOf(":float") > -1) {
+                    value = StringUtil.toFloat(value);
+                }
+                //--------------------------------------------------------------------------------
+                var len = value.length;  // 입력값 길이
+                //--------------------------------------------------------------------------------
+                // 필수입력값
+                //--------------------------------------------------------------------------------
+                if(cls.indexOf(":require") > -1) {
+                    var isEmpty = false;
+                    //--------------------------------------------------------------------------------
+                    if(this.type == "radio") {
+                        isEmpty = $('input:radio[name=' + this.name + ']:checked').val() == undefined;
+                    }
+                    else if(this.type == "checkbox") {
+                        isEmpty = $("input:checkbox[name=" + this.name + "]:checked").val() == undefined;
+                    }
+                    else {
+                        isEmpty = len == 0;
+                    }
+                    //--------------------------------------------------------------------------------
+                    if(isEmpty) {
+                        $that.alertMsg = $that.message.format("require", StringUtil.un(title));
+                    }
+                }
+                //--------------------------------------------------------------------------------
+                // 필수 동의 체크
+                //--------------------------------------------------------------------------------
+                if($that.alertMsg == "" && cls.indexOf(":agree") > -1) {
+                    var isAgree = false;
+                    //--------------------------------------------------------------------------------
+                    if(this.type == "radio") {
+                        isAgree = this.checked;
+                    }
+                    else if(this.type == "checkbox") {
+                        isAgree = this.checked;
+                    }
+                    else {
+                        isAgree = value == true || value == "Y";
+                    }
+                    //--------------------------------------------------------------------------------
+                    if(!isAgree) {
+                        $that.alertMsg = $that.message.format("agree", StringUtil.un(title));
+                    }
+                }
+                //--------------------------------------------------------------------------------
+                if($that.alertMsg == "" && len > 0) {
+                    var isHan = StringUtil.isHangul(value);  // 한글 입력여부.
+                    //--------------------------------------------------------------------------------
+                    if(lengthType == "byte") {
+                        len = StringUtil.chkInputByte(value);  // byte 길이
+                    }
+                    //--------------------------------------------------------------------------------
+                    var size = !isNaN(value) ? parseInt(value) : 0;  // 숫자형 입력값 크기
+                    //--------------------------------------------------------------------------------
+                    // 길이 체크시 한글이 항상 같거나 작으므로 우선한다.
+                    //--------------------------------------------------------------------------------
+                    var chkminlen = lengthType == "size" ? min : isHan && minlenhan > -1 ? minlenhan : minlen;
+                    var chkmaxlen = lengthType == "size" ? max : isHan && maxlenhan > -1 ? maxlenhan : maxlen;
+                    var chklen    = lengthType == "size" ? size : len;
+                    var msgminlen = chkminlen;
+                    var msgmaxlen = chkmaxlen;
+                    //--------------------------------------------------------------------------------
+                    // 한글 입력시 메세지
+                    //--------------------------------------------------------------------------------
+                    if(isHan && minlenhan > -1) {
+                        msgminlen = "영문 " + minlen + " (한글 " + minlenhan + ")";
+                    }
+                    //--------------------------------------------------------------------------------
+                    if(isHan && maxlenhan > -1) {
+                        msgmaxlen = "영문 " + maxlen + " (한글 " + maxlenhan + ")";
+                    }
+                    //--------------------------------------------------------------------------------
+                    // 입력값 고정 길이 검사
+                    //--------------------------------------------------------------------------------
+                    if(chkminlen > -1 && chkmaxlen > -1 && chkminlen == chkmaxlen && chkminlen != chklen) {
+                        $that.alertMsg = $that.message.format("fix" + lengthType, title, msgminlen);
+                    }
+                    //--------------------------------------------------------------------------------
+                    // 입력값 범위 검사
+                    //--------------------------------------------------------------------------------
+                    if($that.alertMsg == "" && chkminlen > -1 && chkmaxlen > -1 && (chkminlen > chklen || chkmaxlen < chklen)) {
+                        $that.alertMsg = $that.message.format("range" + lengthType, StringUtil.un(title), [msgminlen, msgmaxlen]);
+                    }
+                    //--------------------------------------------------------------------------------
+                    // 입력값 최소 길이 검사
+                    //--------------------------------------------------------------------------------
+                    if($that.alertMsg == "" && chkminlen > -1 && chkminlen > chklen) {
+                        $that.alertMsg = $that.message.format("min" + lengthType, StringUtil.un(title), msgminlen);
+                    }
+                    //--------------------------------------------------------------------------------
+                    // 입력값 최대 길이 검사
+                    //--------------------------------------------------------------------------------
+                    if($that.alertMsg == "" && chkmaxlen > -1 && chkmaxlen < chklen) {
+                        $that.alertMsg = $that.message.format("max" + lengthType, StringUtil.un(title), msgmaxlen);
+                    }
+                    //--------------------------------------------------------------------------------
+                    // 날자 유효성 검사
+                    //--------------------------------------------------------------------------------
+                    if ($that.alertMsg == "" && cls.indexOf(":date") > -1) {
+//                        console.log("in date:" + cls);
+                        var optDt = StringUtil.fromToSubstr(cls, ":date[", "]").split(",");
+                        //--------------------------------------------------------------------------------
+                        optDt[0] = optDt[0] ? optDt[0] : null; // 최소일자
+                        optDt[1] = optDt[1] ? optDt[1] : null; // 최대일자
+                        optDt[2] = optDt[2] ? optDt[2] : null; // 기본일자
+                        optDt[3] = optDt[3] ? optDt[3] : "";   // 구분자
+                        //--------------------------------------------------------------------------------
+                        var val = StringUtil.toNumber($(this).val());
+                        //--------------------------------------------------------------------------------
+                        if(val.length < 8 || !ValidUtil.validDate(val)) {
+                            $that.alertMsg = $that.message.format("date", title);
+                        }
+                        //--------------------------------------------------------------------------------
+                        // 날자 범위 검사.
+                        //--------------------------------------------------------------------------------
+                        var dateMsg = ValidUtil.fromToDate(this, optDt[0], optDt[1]);
+                        //--------------------------------------------------------------------------------
+                        if($that.alertMsg == "" && dateMsg[0] != "" && dateMsg[1] != "") {
+                            $that.alertMsg = $that.message.format("rangedate", StringUtil.un(title), dateMsg);
+                        }
+                        else if($that.alertMsg == "" && dateMsg[0] != "") {
+                            $that.alertMsg = $that.message.format("mindate", StringUtil.un(title), dateMsg[0]);
+                        }
+                        else if($that.alertMsg == "" && dateMsg[1] != "") {
+                            $that.alertMsg = $that.message.format("maxdate", StringUtil.un(title), dateMsg[1]);
+                        }
+                    }
+                    //--------------------------------------------------------------------------------
+                    // 이메일 유효성 검사
+                    //--------------------------------------------------------------------------------
+                    if ($that.alertMsg == "" && cls.indexOf(":email") > -1) {
+                        var check_email = ValidUtil.validEmail(this);
+                        //--------------------------------------------------------------------------------
+                        if(!check_email) {
+                            $that.alertMsg = $that.message.format("email", title);
+                        }
+                    }
+                    //--------------------------------------------------------------------------------
+                    // 도메인 유효성 검사
+                    //--------------------------------------------------------------------------------
+                    if($that.alertMsg == "" && cls.indexOf(":domain") > -1) {
+                        var check_domain = ValidUtil.validDomain(this);
+                        //--------------------------------------------------------------------------------
+                        if(!check_domain) {
+                            $that.alertMsg = $that.message.format("domain", title);
+                        }
+                    }
+                }
+                //--------------------------------------------------------------------------------
+                // 유효성 검사 메세지 팝업
+                //--------------------------------------------------------------------------------
+                if ($that.isValid && $that.alertMsg != "") {
+                    $that.isValid = false;
+                    //--------------------------------------------------------------------------------
+                    Message.valid($that.alertMsg, function() {
+                        try {
+                            $(this).delayTime(300, function() {
+                                $that.element.focus();
+                            });
+                        }
+                        catch (e) {}
+                    });
+                }
+            });
+            //--------------------------------------------------------------------------------
+            // 유효성 검사 완료후 포멧 삭제
+            //--------------------------------------------------------------------------------
+            if($that.isValid) {
+                $(form).find("input, textarea").filter("[class*=filter]").each(function(inx) {
+                    var cls = $(this).attr("class");
+                    //--------------------------------------------------------------------------------
+                    // password type 은 값을 변형시키지 않는다
+                    //--------------------------------------------------------------------------------
+                    if (this.type != "password") {
+                        if(cls.indexOf(":html") == -1) {
+                            $that.setVal(this, StringUtil.stripTags($(this).val()));
+                        }
+                        //--------------------------------------------------------------------------------
+                        // 날짜는 구분자 포함해서 넘기기로 함
+                        //--------------------------------------------------------------------------------
+//                        if(cls.indexOf(":date") > -1 || cls.indexOf(":money") > -1) {
+                        if(cls.indexOf(":money") > -1) {
+                            $that.setVal(this, StringUtil.toNumber($(this).val()));
+                        }
+                        //--------------------------------------------------------------------------------
+                        if(cls.indexOf(":float") > -1) {
+                            $that.setVal(this, StringUtil.toFloat($(this).val()));
+                        }
+                    }
+                });
+            }
+            //--------------------------------------------------------------------------------
+            return $that.isValid;
+        },
+        eventStop: function(e) {
+            if(e.preventDefault) {
+                e.preventDefault();
+            }
+            //--------------------------------------------------------------------------------
+            if(e.stopPropagation) {
+                e.stopPropagation();
+            }
+            //--------------------------------------------------------------------------------
+            e.cancelBubble = true;
+        }
+    }
+})(jQuery);
