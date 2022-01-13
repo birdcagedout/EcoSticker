@@ -556,7 +556,7 @@ class EcoSticker:
 			# 쓰레드에서 발급 성공
 			if self.web_agent.eco_process_success == True:
 				self.get_eco_info()					# 쓰레드에서 저공해 정보 얻어옴
-				self.display_result(countdown=90)	# 50초간 발급 결과 화면 보여주기
+				self.display_result(countdown=90)	# 90초간 발급 결과 화면 보여주기
 
 			# 쓰레드에서 발급 실패
 			else:
