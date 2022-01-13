@@ -160,7 +160,7 @@
 <script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/lcvms.js"></script>
 
 <script type="text/javascript">
-    SYSTEM_TIME = "1641864186281";
+    SYSTEM_TIME = "1642037136929";
     //--------------------------------------------------------------------------------
     if(SYSTEM_TIME != "") {
         DateUtil.initSystemTime(SYSTEM_TIME);
@@ -301,7 +301,7 @@
 					chkSearch = true;
 				}
 			} else if (vinNm.length < 16) {
-				Message.alert("차대번호는 영문, 숫자 조합 16자리 이상입니다.", function() {
+				Message.alert("차대번호는 영문, 숫자 조합 16자리 이상 입니다.", function() {
 					$('#vinNm').focus();
 				});
 			} else {
@@ -436,17 +436,21 @@
 					usefuelnm = cvIsu.USEFUELNM
 					;
 				
-
+				if(resultValue == '03') {
+					crtfNo = "";
+					ecoNo  = "";
+				}
 				if(resultValue == '04') {
-					crtfNo = '';
-					ecoNo = '';
+					crtfNo = "";
+					ecoNo  = "";
 				}
 				if(resultValue == '05') {
-					crtfNo = '';
-					ecoNo = '';
+					crtfNo = "";
+					ecoNo  = "";
 				}
-				if(resultValue == '08') {
-					ecoNo = '';
+				if(resultValue == '07') {
+					crtfNo = "";
+					ecoNo  = "";
 				}
 				
 				if (cvisuNo == null || cvisuNo == 'null') cvisuNo = '';
@@ -495,10 +499,15 @@
 				//$form.find("#VIN").val(cvIsu.VIN);
 				$form.find("#CVISU_NO").text(cvisuNo);
 				$form.find("#CAR_REGIST_NO").text(carRegistNo);
+				
+				if(resultValue == "07") {
+					$form.find("#ECO_NO").text("자기인증면제");
+				}
+				
 				if (ecoNo == "1" || ecoNo == "2" || ecoNo == "3") {
 					$form.find("#CRTF_NO").text(crtfNo);
 					$form.find("#ECO_NO").html("<span>"+ecoNo+"종</span>");
-				} 
+				}
 				else if(ecoNo == "" ) {
 					$form.find("#CRTF_NO").text(crtfNo);
 				} 
@@ -1013,8 +1022,8 @@
 				Message.alert("차대번호를 입력해주세요.", function() {
 					$('#vinNm').focus();
 				});
-			} else if (vinNm.length < 16) {
-				Message.alert("차대번호는 영문, 숫자 조합 16자리 이상입니다.", function() {
+			} else if (vinNm.length != 17) {
+				Message.alert("차대번호는 영문, 숫자 조합 17자리 입니다.", function() {
 					$('#vinNm').focus();
 				});
 			} else {
@@ -1135,7 +1144,7 @@
     <div class="util">
         <div class="fr">
             <span class="invite">방문을 환영합니다.</span>
-            <strong class="txt_me">서울시노원구3님 방문을 환영합니다. <br/>( IP: 203.142.217.230 최종접속시간 : 2022-01-11 10:15:55 )</strong>
+            <strong class="txt_me">서울시노원구3님 방문을 환영합니다. <br/>( IP: 203.142.217.230 최종접속시간 : 2022-01-13 09:06:51 )</strong>
             <ul class="util_menu">
                 <!-- li><a href="javascript:BizUtils.openMymenuPopup();" class="btn_type3">즐겨찾기</a></li -->
                 <li><a href="javascript:BizUtils.memberChange();" class="btn_type2">정보변경</a></li>
