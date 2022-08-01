@@ -49,6 +49,7 @@ AUTHENTICATION_SUCCESS = False
 AUTH_DEFAULT_KEY = "EcoSticker2021 by Kim Jae Hyoung"		# 길이=32byte : base64.urlsafe_b64decode(key)=32
 ADMIN_ID = ""
 ADMIN_PW = ""
+VER = "0.6"
 
 # 자동차 등록번호 정규식 	: '[0-9]{2,3}[가-힣][0-9]{4}'
 # 영업용 등록번호 정규식 	: '서울[0-9]{2}[가-힣][0-9]{4}'
@@ -282,7 +283,7 @@ class EcoSticker:
 		# Tk윈도 생성
 		self.root = Tk()
 		self.root.iconbitmap(r"res\car_icon.ico")
-		self.root.title("저공해차량 스티커 자동발급 시스템 ver.0.55 (90초 Edition)")	# 공지/팝업이 뜨거나 말거나 오류 안 나게 수정(0.53) 차대끝2숫자(0.54)
+		self.root.title(f"저공해차량 스티커 자동발급 시스템 ver.{VER} (90초 Edition)")	# 공지/팝업이 뜨거나 말거나 오류 안 나게 수정(0.53) 차대끝2숫자(0.54)
 		self.root.geometry(f"{CANVAS_WIDTH}x{CANVAS_HEIGHT}+{WIN_POS_X}+{WIN_POS_Y}")
 		self.root.resizable(False, False)
 		self.root.wm_attributes("-topmost", True)
@@ -324,8 +325,8 @@ class EcoSticker:
 		#self.canvas_text_plzwait_id = self.canvas.create_text(250, 320, fill="#626288", font=("Malgun Gothic", 15, "bold"), anchor="c", text="")		# 잠시만 기다려주세요.
 
 		# 클립보드 저장용 변수 초기화
-		self.regnum_pattern = re.compile('(서울)?[0-9]{2,3}[가-힣][0-9]{4}')	# 차량등록번호(자가용+영업용)
-		self.vin_pattern = re.compile("[0-9A-Z]{15}[0-9]{2}")  					# 17자리 차대번호(15자리 영문자/숫자 + 2자리 숫자)
+		self.regnum_pattern = re.compile("(서울)?[0-9]{2,3}[가-힣][0-9]{4}")	# 차량등록번호(자가용+영업용)
+		self.vin_pattern = re.compile("[0-9A-Z]{17}")  					# 17자리 차대번호(15자리 영문자/숫자 + 2자리 숫자)
 		
 		self.vin_entered = ""
 		self.regnum_entered = ""
@@ -567,6 +568,7 @@ class EcoSticker:
 					retry = True
 
 					# 쓰레드 죽이고 + 다시 생성 + 쓰레드 시작
+					self.web_agent.join()
 					del self.web_agent
 					self.web_agent = WebAgentThread()
 					self.web_agent.setCarInfo(reg_num=self.regnum_entered, vin_num=self.vin_entered)
@@ -607,7 +609,15 @@ class EcoSticker:
 	#########################################################
 	# 윈도 흔들기 : horizontal=True이면 좌우방향, False이면 상하방향
 	def win_shake(self, horizontal=True):
-		total_times = 40
+
+		# 창이 최소화 상태라면 원래대로 restore
+		if self.root.state() == "iconic":
+			self.root.deiconify()
+			time.sleep(0.5)
+
+
+		# 흔드는 횟수
+		total_times = 10
 		this_time = total_times
 
 		##################################################
@@ -649,12 +659,17 @@ class EcoSticker:
 			# + delta만큼 이동
 			self.root.geometry(f"+{pos_x + delta_x}+{pos_y + delta_y}")
 			self.root.update()
+			time.sleep(0.001)
+
 			# - 2*delta만큼 이동
 			self.root.geometry(f"+{pos_x - 2*delta_x}+{pos_y - 2*delta_y}")
 			self.root.update()
+			time.sleep(0.001)
+
 			# 다시 +delta만큼 이동
 			self.root.geometry(f"+{pos_x + delta_x}+{pos_y + delta_y}")
 			self.root.update()
+			time.sleep(0.001)
 
 			this_time -= 1
 

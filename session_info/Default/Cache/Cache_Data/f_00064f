@@ -1,0 +1,1566 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="ko">
+
+
+<head>
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+
+
+
+
+
+
+<meta charset="utf-8" />
+<title>친환경차 종합정보 지원시스템</title>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<link rel="shortcut icon" type="text/css" href="/lcvms-mncpt/docs/ecoGov/img/favicon.ico" />
+<link rel="stylesheet" type="text/css" href="/lcvms-mncpt/docs/ecoGov/css/common.css" />
+<link rel="stylesheet" type="text/css" href="/lcvms-mncpt/docs/ecoGov/css/jquery-ui-1.9.2.custom.css" />
+<link rel="stylesheet" type="text/css" href="/lcvms-mncpt/docs/ecoGov/css/ui.jqgrid.css" />
+<link rel="stylesheet" type="text/css" href="/lcvms-mncpt/docs/ecoGov/css/lcvms.css" />
+
+<script type="text/javascript">
+    var CONTEXT_PATH         = "/lcvms-mncpt";
+    //--------------------------------------------------------------------------------
+    var PAGE_UNIT = 100;
+    //--------------------------------------------------------------------------------
+    var MESSAGE_ATTRIBUTE_NAME = "_resultMessage";
+    //--------------------------------------------------------------------------------
+    var IS_ERROR_ATTRIBUTE_NAME            = "_IS_ERROR";
+    var ERROR_MESSAGE_ATTRIBUTE_NAME       = "_ERROR_MESSAGE";
+    var ERROR_MESSAGE_STACK_ATTRIBUTE_NAME = "_ERROR_MESSAGE_STACK";
+    //--------------------------------------------------------------------------------
+    var ENCRYPT_ELEMENT_NAME = "_ISSACWEB_DATA";
+    //--------------------------------------------------------------------------------
+    var PKI_CERT_USE_YN_ELEMENT_NAME    = "_ISSACWEB_CERT_USE_YN";
+    var PKI_CERT_CHALLENGE_ELEMENT_NAME = "_ISSACWEB_CERT_CHALLENGE";
+    var PKI_CERT_RESPONSE_ELEMENT_NAME  = "_ISSACWEB_CERT_RESPONSE";
+    var PKI_CERT_VIDRND_ELEMENT_NAME    = "_ISSACWEB_CERT_VIDRND";
+    var PKI_CERT_VID_TYPE_ELEMENT_NAME  = "_ISSACWEB_CERT_VID_TYPE";
+    var PKI_CERT_VID_ELEMENT_NAME       = "_ISSACWEB_CERT_VID";
+    //--------------------------------------------------------------------------------
+    var PPC_USE_YN_SESSION_NAME  = "_PPC_USE_YN";
+    var PPC_NAME_SESSION_NAME    = "_PPC_NAME";
+    var PPC_SEX_SESSION_NAME     = "_PPC_SEX";
+    var PPC_FGN_GBN_SESSION_NAME = "_PPC_FGN_GBN";
+    var PPC_CELL_NO_SESSION_NAME = "_PPC_CELL_NO";
+    var PPC_BIRYMD_SESSION_NAME  = "_PPC_BIR_YMD";
+    //--------------------------------------------------------------------------------
+    var BASE64CHALLENGE = "";
+    //--------------------------------------------------------------------------------
+    var _LOGIN_INFO_IS_LOGIN       = true;
+    var _LOGIN_INFO_MBER_TY        = "O40";
+    var _LOGIN_INFO_PASSWORD_CHGDE = "";
+
+</script>
+
+<script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/jquery-ui.min.js"></script>
+<script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/jquery.cookie.js"></script>
+<script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/grid.locale-kr.js"></script>
+<script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/jquery.jqGrid.min.js"></script>
+<script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/utils/utils.js?_=1"></script>
+<script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/utils/bizutils.js?_=1"></script>
+<script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/package.js"></script>
+<script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/ext/ext_jquery.js"></script>
+<script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/ext/ext_block.js"></script>
+<script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/ext/ext_pki.js"></script>
+<script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/ext/ext_message.js"></script>
+<script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/ext/ext_layer.js"></script>
+<script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/ext/ext_validation.js"></script>
+<script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/ext/ext_report.js?_=1"></script>
+<script type="text/javascript" src="/lcvms-mncpt/docs/ecoGov/js/lcvms.js"></script>
+
+<script type="text/javascript">
+    SYSTEM_TIME = "1648425671740";
+    //--------------------------------------------------------------------------------
+    if(SYSTEM_TIME != "") {
+        DateUtil.initSystemTime(SYSTEM_TIME);
+    }
+    if(_LOGIN_INFO_IS_LOGIN)	window.onunload = function(e) {logout();};
+    
+</script>
+
+
+<base target="_self" />
+
+
+    <link rel="stylesheet" type="text/css" href="/lcvms-mncpt/docs/ecoGov/css/pop.css" />
+    <script type="text/javascript">
+        var requestUri = "/lcvms-mncpt/I010001000SA02.do";
+        var cvisuUri = "/lcvms-mncpt/I010001000IF02.do";
+        
+        /**
+         * onload 시에 수행될 내용
+         */
+        formReady("form", function(form) {
+            var $form = $(form);
+            
+            //------------------------------------------------------------
+            // 조회 버튼
+            //------------------------------------------------------------
+            $form.find("#btnSearch").click(function() {
+            	enterSearch();
+            });
+            
+            $('#reqBtnClose2').click(function(){
+        		$('#DLayer').hide();
+        		$('#modalPop').hide();
+        	});
+        	
+        	$('#reqBtnClose1').click(function(){
+        		$('#DLayer').hide();
+        		$('#modalPop').hide();
+        	});
+        	
+        	$("#trIssuReason").hide();
+			
+			var isClose = $.cookie('notice.popup.check');
+        	
+        	if(!isClose || isClose !== "close") {
+    			//ajaxSubmit(popNoticeUri, param, popupNoticeAjaxCallback, null, null);
+    			
+    		    //------------------------------------------------------------
+    		    $.ajax({
+    		        type: "POST",
+    		        cache: false,
+    		        url: "/lcvms-mncpt/I010001000SA00.do",
+//     		        async: false,
+    		        dataType: "JSON",
+    		        data: {},
+    		        complete: function(data, status) {
+    		            var resultJson = JSON.parse(data.responseText);
+    		            //result = resultJson.result;
+    		            //console.log(resultJson);
+    		            //console.log("resultJson.isError : " + resultJson.isError);
+    		            if(resultJson.isError) {
+    		        		return;
+    		        	} else {
+    		        		try {
+    		                    var popupNotice = resultJson.popNotice;
+    		                    if(!popupNotice == "") {
+    		                    	var $form = $(getForm("popForm"));
+//     		                    	$("#sj").val(popupNotice.SJ);
+//     		                    	$("#cn").val(popupNotice.CN);
+									
+//     		                    	var popup = window.open("", "POP", "width=" + popupNotice.POPUP_WIDTH_MG + ",height=" + popupNotice.POPUP_VRTICL_MG + ",top=" + popupNotice.POPUP_LC_TOP + ",left=" + popupNotice.POPUP_LC_LEFT + ", location=no, scrollbars=no");
+//     		            			popup.focus();
+
+//     		            			$form.attr("method", "post");
+//     		                        $form.attr("target", "POP");
+//     		                        $form.attr("action", "/lcvms-mncpt/EP009901002SF01.do");
+//     		                        $form.submit();
+    		                        
+    		                        $('#headtext1').html(popupNotice.SJ);
+    		                        $('#subhtext1').html(popupNotice.CN);
+    		                        
+    		            			//if( navigator.platform){
+    		            				//console.log("gubunFilter : " + gubunFilter);
+    		            				//if(gubunFilter.indexOf(navigator.platform.toLowerCase()) < 0){
+    		            					//모바일
+	    		                        //$('#DLayer').css("top",popupNotice.POPUP_LC_TOP).css("left",popupNotice.POPUP_LC_LEFT).css("display","block");
+	    		                        //$('#DLayer').addClass("container");
+    		            					
+    		            				//}else{
+    		            					//PC
+	    		                        $('#DLayer').css("width",popupNotice.POPUP_WIDTH_MG).css("height",popupNotice.POPUP_VRTICL_MG).css("top",popupNotice.POPUP_LC_TOP).css("left",popupNotice.POPUP_LC_LEFT).css("display","block");
+	    		            			$('#DLayer').removeClass("container");
+    		            				//}
+    		            			//}
+    		                        
+    		                        var main_width = screen.availWidth;
+    		                        var main_height = screen.availHeight;
+    		                        
+    		                        var pop_width = $("#DLayer").width();
+    		                        var pop_height = $("#DLayer").height();
+    		                        
+    		                        $("#DLayer").css("left",$(window).scrollLeft() + ($(window).width() - pop_width)/2 );
+    		                        $("#DLayer").css("top", $(window).scrollTop() + ($(window).height() - pop_height) / 2);	
+    		                        
+    		                        $("#modalPop").show();
+    		                    }
+    						} catch (e) {
+    							System.err.println("예외 발생 >>"+e);
+    						}
+    		        	}
+    		        }
+    		    });
+                loadingBlock(false);
+            }
+        });
+        
+		//---------------------------------------------------
+		//검색 조건 엔터 조회
+		//-----------------------------------------------------------
+		function enterSearch() {
+			var vinNm = $("#vinNm").val();
+			var carRegistNo = $("#carRegistNo").val();
+        	var chkSearch = false;
+        	vinNm = $.trim(vinNm);
+        	carRegistNo = $.trim(carRegistNo);
+			if( vinNm.length==0 || carRegistNo.length==0){
+				if( carRegistNo.length==0){
+					Message.alert("차량등록번호를 입력해주세요.", function() {
+						$('#carRegistNo').focus();
+					});
+				} 
+				else if (vinNm.length==0) {
+					Message.alert("차대번호를 입력해주세요.", function() {
+						$('#vinNm').focus();
+					});
+				}
+				else {
+					chkSearch = true;
+				}
+			} else if (vinNm.length < 16) {
+				Message.alert("차대번호는 영문, 숫자 조합 16자리 이상 입니다.", function() {
+					$('#vinNm').focus();
+				});
+			} else {
+				chkSearch = true;
+			}
+			
+			// 차대번호 확인 미확인으로 변경
+			$("#chkVin").val("N");
+			$("#btnChkVin").hide();
+			
+			if (chkSearch == true) {
+				ajaxSubmit(requestUri, getSearchParameter(), ajaxCallback);
+			}
+        }
+
+		//------------------------------------------------------------
+		// 페이지 초기화 버튼
+		//------------------------------------------------------------
+		function pageInit() {
+        	$("#CVISU_NO").text("");
+			$("#CAR_REGIST_NO").text("");
+			$("#CRTF_NO").text("");
+			$("#ECO_NO").text("");
+			$("#ECO_STNDRD_NO").text("");
+			$("#CAR_NM").text("");
+			$("#OWNER_NM").text("");
+			$("#ISSU_CNT").text("");
+			$("#AREA_SI_NM").text("");
+			//$("#CRTF_YEAR").text("");
+			$("#CAR_RGSDE").text("");
+			$("#ODNC_YN").text("");
+			
+			$("#USEFUELNM").text("");
+			
+			$("#carRegistNo").val("");
+			$("#vinNm").val("");
+			//$("#ownerIhidnum1").val("");
+			//$("#ownerIhidnum2").val("");
+			
+			$("#ecoStndrdNo").val("");
+			$("#crtfNo").val("");
+			$("#saveCvisuNo").val("");
+			$("#saveCvisuReqSn").val("");
+			$("#saveCarRegistNo").val("");
+			$("#saveVin").val("");
+			$("#saveVinNm").val("");
+			$("#saveEcoStndrdNo").val("");
+			$("#saveCarNm").val("");
+			$("#saveOwnerAdres").val("");
+			$("#saveOwnerNm").val("");
+			$("#saveOwnerIhidnum").val("");
+			$("#saveAreaSe").val("");
+			$("#saveAreaSiSe").val("");
+			$("#saveCrtfNo").val("");
+			$("#saveCarKndCode").val("");
+			$("#saveCarRgsde").val("");
+			$("#saveLocalGovSe").val("");
+			
+			// 표지재발급 사유란 비활성화 및 숨기기
+			$("#trIssuReason").hide();
+			$("#issuReason").attr("disabled", true);
+			
+			$("#crtfNo").attr("disabled", true);
+			$("#ecoStndrdNo").attr("disabled", true);
+			$("#btnCvisu").text("표지발급");
+			$('#carRegistNo').focus();
+			
+			// 차대번호 확인 미확인으로 변경
+			$("#chkVin").val("N");
+			$("#btnChkVin").hide();
+        }
+        
+        function getSearchParameter() {
+            var charger_ip = "203.142.217.230";
+            var jsonParam = {};
+            var vinNm = $("#vinNm").val(),
+            	carRegistNo = $("#carRegistNo").val(),
+            	ecoStndrdNo = $("#ecoStndrdNo").val();
+            if (vinNm != "" && vinNm != undefined) {
+            	vinNm = vinNm.toUpperCase();
+            	// 차대번호 확인 확인으로 변경
+    			$("#chkVin").val("Y");
+    			$("#btnChkVin").hide();
+            }
+            if (ecoStndrdNo != "" && ecoStndrdNo != undefined) {
+            	ecoStndrdNo = ecoStndrdNo.toUpperCase();
+            }
+            //------------------------------------------------------------
+            jsonParam.VIN_NM = $.trim(vinNm);
+            jsonParam.CAR_REGIST_NO = $.trim(carRegistNo);
+            jsonParam.ECO_STNDRD_NO = ecoStndrdNo;
+            if(charger_ip.length <= 23){
+            	jsonParam.CHARGER_IP = charger_ip;
+            }else{
+            	charger_ip = charger_ip.substring(0, 23);
+            	jsonParam.CHARGER_IP = charger_ip;
+            }
+			//console.log("charger_ip="+charger_ip);
+            //------------------------------------------------------------
+            return jsonParam;
+        }
+        
+        // 표지발급요청 리턴
+		function ajaxCallback(resultJson) {
+			var $form = $(getForm("form"));
+			var cvIsu = resultJson.cvIsu;
+			
+			if(cvIsu != null){
+				var cvisuNo = cvIsu.CVISU_NO,
+					carRegistNo = cvIsu.CAR_REGIST_NO,
+					crtfNo = cvIsu.CRTF_NO,
+					ecoNo = cvIsu.ECO_NO,
+					ecoStndrdNo = cvIsu.ECO_STNDRD_NO,
+					carNm = cvIsu.CAR_NM,
+					ownerNm = cvIsu.OWNER_NM,
+					issuSe = cvIsu.ISSU_SE,
+					issuCnt = cvIsu.ISSU_CNT,
+					areaSiNm = cvIsu.AREA_SI_NM,
+					//crtfYear = cvIsu.CRTF_YEAR,
+					carRgsde = cvIsu.CAR_RGSDE,
+					cvisuReqSn = cvIsu.CVISU_REQ_SN,
+					vin = cvIsu.VIN,
+					vinNm = cvIsu.VIN_NM,
+					ownerAdres = cvIsu.OWNER_ADRES,
+					ownerIhidnum = cvIsu.OWNER_IHIDNUM,
+					areaSe = cvIsu.AREA_SE,
+					areaSiSe = cvIsu.AREA_SI_SE,
+					carKndCode = cvIsu.CAR_KND_CODE,
+					localGovSe = cvIsu.LOCAL_GOV_SE,
+					odncYn = cvIsu.ODNC_YN,
+					resultValue = cvIsu.RESULT_VALUE,
+					usefuelnm = cvIsu.USEFUELNM
+					;
+				
+				if(resultValue == '03') {
+					crtfNo = "";
+					ecoNo  = "";
+				}
+				if(resultValue == '04') {
+					crtfNo = "";
+					ecoNo  = "";
+				}
+				if(resultValue == '05') {
+					crtfNo = "";
+					ecoNo  = "";
+				}
+				if(resultValue == '07') {
+					crtfNo = "";
+					ecoNo  = "";
+				}
+				
+				if (cvisuNo == null || cvisuNo == 'null') cvisuNo = '';
+				if (carRegistNo == null || carRegistNo == 'null') carRegistNo = '';
+				if (crtfNo == null || crtfNo == 'null') {
+					$("#ecoStndrdNo").attr("disabled", false);
+					crtfNo = '';
+				}
+				if (ecoNo == null || ecoNo == 'null') ecoNo = '';
+				if (ecoStndrdNo == null || ecoStndrdNo == 'null') ecoStndrdNo = '';
+				if (carNm == null || carNm == 'null') carNm = '';
+				if (ownerNm == null || ownerNm == 'null') ownerNm = '';
+				if (issuSe == null || issuSe == 'null') issuSe = '';
+				if (issuCnt == null || issuCnt == 'null') issuCnt = '0';
+				if (areaSiNm == null || areaSiNm == 'null') areaSiNm = '';
+				//if (crtfYear == null || crtfYear == 'null') crtfYear = '';
+				if (carRgsde == null || carRgsde == 'null') carRgsde = '';
+				if (cvisuReqSn == null || cvisuReqSn == 'null') cvisuReqSn = '';
+				if (vin == null || vin == 'null') vin = '';
+				if (vinNm == null || vinNm == 'null') vinNm = '';
+				if (ownerAdres == null || ownerAdres == 'null') ownerAdres = '';
+				if (ownerIhidnum == null || ownerIhidnum == 'null') ownerIhidnum = '';
+				if (areaSe == null || areaSe == 'null') areaSe = '';
+				if (areaSiSe == null || areaSiSe == 'null') areaSiSe = '';
+				if (carKndCode == null || carKndCode == 'null') carKndCode = '';
+				if (localGovSe == null || localGovSe == 'null') localGovSe = '';
+				if (odncYn == null || odncYn == 'null') odncYn = '';
+				else if (odncYn == '1') odncYn = 'O';
+				else if (odncYn == '0') odncYn = 'X';
+				
+				var tmpVinNm = $.trim($("#vinNm").val());
+				if (tmpVinNm == undefined || tmpVinNm == "") {
+					if (vinNm == undefined || vinNm == "" || vinNm == null || vinNm == "null") {
+						$("#btnChkVin").hide();
+						$("#chkVin").val("N");
+						Message.alert("차대번호 확인이 필요합니다. 차대번호 입력 후 [확인]버튼을 눌러주세요.", function() {
+							$('#vinNm').focus();
+						});
+					} else {
+						$("#chkVin").val("N");
+						$("#btnChkVin").show();
+						$("#vinNm").val(vinNm);
+					}
+				}
+				
+				//$form.find("#VIN").val(cvIsu.VIN);
+				$form.find("#CVISU_NO").text(cvisuNo);
+				$form.find("#CAR_REGIST_NO").text(carRegistNo);
+				
+				if(resultValue == "07") {
+					$form.find("#ECO_NO").text("자기인증면제");
+				}
+				
+				if (ecoNo == "1" || ecoNo == "2" || ecoNo == "3") {
+					$form.find("#CRTF_NO").text(crtfNo);
+					$form.find("#ECO_NO").html("<span>"+ecoNo+"종</span>");
+				}
+				else if(ecoNo == "" ) {
+					$form.find("#CRTF_NO").text(crtfNo);
+				} 
+				else {
+					$("#crtfNo").attr("disabled", false);
+					$form.find("#CRTF_NO").html("<span style='color:red;'>조회 내역이 없습니다.</span>");
+					$form.find("#ECO_NO").html("<span style='color:red;'>조회 내역이 없습니다.</span>");
+				}
+				$form.find("#ECO_STNDRD_NO").text(ecoStndrdNo);
+				$form.find("#CAR_NM").text(carNm);
+				$form.find("#OWNER_NM").text(ownerNm);
+				//$form.find("#ISSU_SE").text(issuSe);
+				$form.find("#ISSU_CNT").text(issuCnt);
+				$form.find("#AREA_SI_NM").text(areaSiNm); 	 
+				//$form.find("#CRTF_YEAR").text(crtfYear);
+				$form.find("#CAR_RGSDE").text(carRgsde);
+				$form.find("#ODNC_YN").text(odncYn);
+				
+				$form.find("#USEFUELNM").text(usefuelnm);
+				
+				$("#carRegistNo").val(carRegistNo);
+				$("#saveCvisuNo").val(cvisuNo);
+				$("#saveCvisuReqSn").val(cvisuReqSn);
+				$("#saveCarRegistNo").val(carRegistNo);
+				$("#saveVin").val(vin);
+				$("#saveVinNm").val(vinNm);
+				$("#saveEcoStndrdNo").val(ecoStndrdNo);
+				$("#saveCarNm").val(carNm);
+				$("#saveOwnerAdres").val(ownerAdres);
+				$("#saveOwnerNm").val(ownerNm);
+				$("#saveOwnerIhidnum").val(ownerIhidnum);
+				$("#saveAreaSe").val(areaSe);
+				$("#saveAreaSiSe").val(areaSiSe);
+				$("#saveCrtfNo").val(crtfNo);
+				$("#saveCarKndCode").val(carKndCode);
+				$("#saveCarRgsde").val(carRgsde);
+				$("#saveLocalGovSe").val(localGovSe);
+				
+				if (issuCnt > 0) {
+					$("#btnCvisu").text("표지재발급");
+					$("#trIssuReason").show();
+					$("#issuReason").attr("disabled", false);
+				} else {
+					$("#btnCvisu").text("표지발급");
+					$("#trIssuReason").hide();
+					$("#issuReason").attr("disabled", true);
+				}
+				// 제원번호 미존재일 경우
+				// 국토부에서 데이터가 들어올 경우는 인증번호입력란으로 커서이동
+				//alert("cvIsu not null resultValue="+resultValue+ " : ecoStndrdNo="+ecoStndrdNo);
+				if (resultValue == "04") {
+					if (ecoStndrdNo == null || ecoStndrdNo == "" || ecoStndrdNo == undefined || ecoStndrdNo == "null") {
+						$("#ecoStndrdNo").attr("disabled", false);
+						$('#ecoStndrdNo').focus();
+					} else {
+						$("#crtfNo").attr("disabled", false);
+						$("#crtfNo").focus();
+					}
+				} else if (resultValue == "01") {	// 국토부에서 데이터가 안들어올 경우는 제원번호 입력란으로 커서 이동
+					$("#ecoStndrdNo").attr("disabled", false);
+					$('#ecoStndrdNo').focus();
+				} else if (resultValue == "05") {
+					$("#crtfNo").attr("disabled", false);
+					$("#crtfNo").focus();
+				}
+			} else {
+				var msg = '';
+				var errMsg = resultJson.errorMsg;
+				if (errMsg == '' || errMsg == undefined || errMsg == 'null') {
+					errMsg = resultJson._resultMessage;
+				}
+				
+				// 표지발급 정보 초기화
+				$form.find("#CVISU_NO").text("");
+				$form.find("#CAR_REGIST_NO").text("");
+				$form.find("#CRTF_NO").text("");
+				$form.find("#ECO_NO").text("");
+				$form.find("#ECO_STNDRD_NO").text("");
+				$form.find("#CAR_NM").text("");
+				$form.find("#OWNER_NM").text("");
+				//$form.find("#ISSU_SE").text("");
+				$form.find("#ISSU_CNT").text("");
+				$form.find("#AREA_SI_NM").text(""); 	 
+				//$form.find("#CRTF_YEAR").text("");
+				$form.find("#CAR_RGSDE").text("");
+				$form.find("#ODNC_YN").text("");
+				
+				$form.find("#USEFUELNM").text("");
+				
+				$("#ecoStndrdNo").val("");
+				$("#crtfNo").val("");
+				$("#saveCvisuNo").val("");
+				$("#saveCvisuReqSn").val("");
+				$("#saveCarRegistNo").val("");
+				$("#saveVin").val("");
+				$("#saveVinNm").val("");
+				$("#saveEcoStndrdNo").val("");
+				$("#saveCarNm").val("");
+				$("#saveOwnerAdres").val("");
+				$("#saveOwnerNm").val("");
+				$("#saveOwnerIhidnum").val("");
+				$("#saveAreaSe").val("");
+				$("#saveAreaSiSe").val("");
+				$("#saveCrtfNo").val("");
+				$("#saveCarKndCode").val("");
+				$("#saveCarRgsde").val("");
+				$("#saveLocalGovSe").val("");
+				
+				$("#btnCvisu").text("표지발급");
+				$("#trIssuReason").hide();
+				$("#issuReason").attr("disabled", true);
+				
+				if (errMsg.indexOf("제원번호") > -1) {
+					$("#ecoStndrdNo").attr("disabled", false);
+					Message.alert(errMsg, function() {
+						$('#ecoStndrdNo').focus();
+					});
+				} else {
+					Message.alert(errMsg);
+					$('#vinNm').focus();
+				}
+			}
+        }
+        
+		function goCvisInfo() {
+			var $form = $(form);
+			var reqUri = "/lcvms-mncpt/I010001000SF01.do";
+			$form.attr("method", "post");
+			$form.attr("action", reqUri);
+			formSubmit($form[0]);
+		}
+        
+		// 표지발급 파라메터 정의
+        function getCvisuParameter() {
+            var jsonParam = {};
+            //------------------------------------------------------------
+            //jsonParam.CVISU_NO = $("#saveCvisuNo").val();
+            jsonParam.CVISU_REQ_SN = $("#saveCvisuReqSn").val();
+            jsonParam.CAR_REGIST_NO = $("#saveCarRegistNo").val();
+            jsonParam.VIN = $("#saveVin").val();
+            jsonParam.VIN_NM = $("#saveVinNm").val();
+            jsonParam.ECO_STNDRD_NO = $("#saveEcoStndrdNo").val();
+            jsonParam.CAR_NM = $("#saveCarNm").val();
+            jsonParam.OWNER_ADRES = $("#saveOwnerAdres").val();
+            jsonParam.OWNER_NM = $("#saveOwnerNm").val();
+            jsonParam.OWNER_IHIDNUM = $("#saveOwnerIhidnum").val();
+            jsonParam.AREA_SE = $("#saveAreaSe").val();
+            jsonParam.AREA_SI_SE = $("#saveAreaSiSe").val();
+            jsonParam.CRTF_NO = $("#saveCrtfNo").val();
+            jsonParam.CAR_KND_CODE = $("#saveCarKndCode").val();
+            jsonParam.CAR_RGSDE = $("#saveCarRgsde").val();
+            jsonParam.LOCAL_GOV_SE = $("#saveLocalGovSe").val();
+            jsonParam.ISSU_REASON = $("#issuReason").val();
+            //------------------------------------------------------------
+            return jsonParam;
+        }
+        
+     	// 표지발급
+		function setCvisu(){
+			var param = {},
+				issuAt = true,
+				crtfNo = $("#saveCrtfNo").val(),
+				cvisuReqSn = $("#saveCvisuReqSn").val(),
+				ecoStndrdNo = $("#ecoStndrdNo").val(),
+				vinNm = $("#vinNm").val(),
+				saveEcoStndrdNo = $("#saveEcoStndrdNo").val(),
+				chkVin = $("#chkVin").val();
+
+			// 차대번호 미입력 시 차대번호 입력하도록 유도
+			if (vinNm == "" || vinNm == null || vinNm == undefined || vinNm == "null") {
+				Message.alert("차대번호 확인 후 표지발급이 가능합니다. 차대번호 입력 후 [확인]버튼을 눌러주세요.", function() {
+					$('#vinNm').focus();
+				});
+				return;
+			}
+			
+			// 차대번호 확인 미확인으로 변경
+			if (chkVin != "Y") {
+				Message.alert("차대번호 확인 후 표지발급이 가능합니다. [차대번호확인]버튼을 눌러주세요.", function() {
+					$('#btnChkVin').focus();
+				});
+				return;
+			}
+			
+			// 표지발급 요청이 없을 경우 표지발급요청 유도
+			if (cvisuReqSn == "" || cvisuReqSn == null || cvisuReqSn == undefined || cvisuReqSn == "null") {
+				Message.alert("차량정보 확인을 위해 차대번호 입력 후 [확인]버튼을 눌러주세요.", function() {
+					$('#btnSearch').focus();
+				});
+				return;
+			}
+			
+			// 에러코드가 있을경우 표지발급 제한
+			if (crtfNo == "" || crtfNo == null || crtfNo == undefined || crtfNo == "null" || crtfNo.substring(8,9) == "4") {
+				issuAt = false;
+			}
+			if (issuAt == false) {
+				Message.alert("표지발급 대상 차량이 아닙니다.\n발급을 원하시면 인증번호 입력 후 임의표지발급 버튼을 눌러주세요.", function() {
+					$('#crtfNo').focus();
+				});
+				return;
+			}
+			
+			// 차량정보가 없을 경우 임시발급을위해 제원번호 체크
+			if (saveEcoStndrdNo == "" || saveEcoStndrdNo == null || saveEcoStndrdNo == undefined || saveEcoStndrdNo == "null") {
+				if (vinNm == "" || vinNm == null || vinNm == undefined || vinNm == "null") {
+					Message.alert("차대번호를 입력해주세요.", function() {
+						$('#vinNm').focus();
+					});
+					return;
+				}
+				if (ecoStndrdNo == "" || ecoStndrdNo == null || ecoStndrdNo == undefined || ecoStndrdNo == "null") {
+					Message.alert("제원번호를 입력해주세요.", function() {
+						$('#ecoStndrdNo').focus();
+					});
+					return;
+				}
+				param.ECO_STNDRD_NO = ecoStndrdNo;
+				param.VIN_NM = vinNm;
+				param.CVISU_REQ_SN = $("#saveCvisuReqSn").val();
+			} else {
+				param = getCvisuParameter();
+			}
+			
+			//console.log(param);
+			
+//			var paramExt = {};
+//			paramExt.menuId            = nowMenuId;
+//			paramExt.extNm             = "표지발급";
+//			var extHistUrl = "/lcvms-mncpt/extHist.do";
+			
+//			loadingBlock(true);
+//			$.ajax({
+//				type: "POST",
+//				cache: false,
+//				url: extHistUrl,
+//				data: paramExt,
+//				complete: function(data, status) {
+//					var resultJson = JSON.parse(data.responseText);
+					ajaxSubmit(cvisuUri, param, ajaxCvisuCallback);
+//				}
+//			});
+		}
+		
+		// 임의 표지발급 파라메터 정의
+        function getForcedCvisuParameter() {
+            var jsonParam = {};
+            //------------------------------------------------------------
+            //jsonParam.CVISU_NO = $("#saveCvisuNo").val();
+            jsonParam.CVISU_REQ_SN = $("#saveCvisuReqSn").val();
+            jsonParam.CAR_REGIST_NO = $("#saveCarRegistNo").val();
+            jsonParam.VIN = $("#saveVin").val();
+            jsonParam.VIN_NM = $("#saveVinNm").val();
+            jsonParam.ECO_STNDRD_NO = $("#saveEcoStndrdNo").val();
+            jsonParam.CAR_NM = $("#saveCarNm").val();
+            jsonParam.OWNER_ADRES = $("#saveOwnerAdres").val();
+            jsonParam.OWNER_NM = $("#saveOwnerNm").val();
+            jsonParam.OWNER_IHIDNUM = $("#saveOwnerIhidnum").val();
+            jsonParam.AREA_SE = $("#saveAreaSe").val();
+            jsonParam.AREA_SI_SE = $("#saveAreaSiSe").val();
+            jsonParam.CRTF_NO = $("#crtfNo").val();
+            jsonParam.CAR_KND_CODE = $("#saveCarKndCode").val();
+			jsonParam.CAR_RGSDE = $("#saveCarRgsde").val();
+            jsonParam.LOCAL_GOV_SE = $("#saveLocalGovSe").val();
+            jsonParam.ISSU_REASON = $("#issuReason").val();
+            jsonParam.FORCE_AT = 'Y';
+            //------------------------------------------------------------
+            return jsonParam;
+        }
+		
+		// 미조회차량발급
+		function setForcedCvisu(){
+			var param = {},
+				cvisuReqSn = $("#saveCvisuReqSn").val(),
+				ecoStndrdNo = $("#ecoStndrdNo").val(),
+				crtfNo = $("#crtfNo").val(),
+				vinNm = $("#vinNm").val(),
+				saveEcoStndrdNo = $("#saveEcoStndrdNo").val(),
+				chkVin = $("#chkVin").val();
+
+			// 차대번호 확인 미확인으로 변경
+			if (chkVin != "Y") {
+				Message.alert("차대번호 확인 후 표지발급이 가능합니다. [차대번호확인]버튼을 눌러주세요.", function() {
+					$('#btnChkVin').focus();
+				});
+				return;
+			}
+			
+			// 표지발급 요청이 없을 경우 표지발급요청 유도
+			if (cvisuReqSn == "" || cvisuReqSn == null || cvisuReqSn == undefined || cvisuReqSn == "null") {
+				Message.alert("차량정보 확인을 위해 차대번호 입력 후 [확인]버튼을 눌러주세요.", function() {
+					$('#btnSearch').focus();
+				});
+				return;
+			}
+			
+			// 미조회차량발급 시 차대번호 입력 체크
+			if (vinNm == "" || vinNm == null || vinNm == undefined || vinNm == "null") {
+				Message.alert("차대번호를 입력해주세요.", function() {
+					$('#vinNm').focus();
+				});
+				return;
+			}
+			// 미조회차량발급 시 인증번호 입력 체크
+			if (crtfNo == "" || crtfNo == null || crtfNo == undefined || crtfNo == "null") {
+				Message.alert("미조회차량발급을 위해 인증번호를 입력해주세요.", function() {
+					$('#crtfNo').focus();
+				});
+				return;
+			}
+			
+			// 차량정보가 없을 경우 미조회차량발급을 위해 제원번호 체크
+			if (saveEcoStndrdNo == "" || saveEcoStndrdNo == null || saveEcoStndrdNo == undefined || saveEcoStndrdNo == "null") {
+				// 미조회차량발급 시 제원번호 입력 체크
+				if (ecoStndrdNo == "" || ecoStndrdNo == null || ecoStndrdNo == undefined || ecoStndrdNo == "null") {
+					Message.alert("미조회차량발급을 위해 제원번호를 입력해주세요.", function() {
+						$('#ecoStndrdNo').focus();
+					});
+					return;
+				}
+				param.ECO_STNDRD_NO = ecoStndrdNo;
+				param.VIN_NM = vinNm;
+				param.CVISU_REQ_SN = $("#saveCvisuReqSn").val();
+				param.CRTF_NO = crtfNo;
+				param.FORCE_AT = 'Y';
+			} else {
+				param = getForcedCvisuParameter();
+			}
+			
+			//console.log(param);
+			
+//			var paramExt = {};
+//			paramExt.menuId            = nowMenuId;
+//			paramExt.extNm             = "표지발급";
+//			var extHistUrl = "/lcvms-mncpt/extHist.do";
+			
+//			loadingBlock(true);
+//			$.ajax({
+//				type: "POST",
+//				cache: false,
+//				url: extHistUrl,
+//				data: paramExt,
+//				complete: function(data, status) {
+//					var resultJson = JSON.parse(data.responseText);
+					ajaxSubmit(cvisuUri, param, ajaxCvisuCallback);
+//				}
+//			});
+		}
+		// 표지발급 리턴
+		function ajaxCvisuCallback(resultJson){
+			var $form = $(getForm("form"));
+			var cvIsu = resultJson.cvIsu;
+			
+			$("#btnCvisu").text("표지발급");
+			$("#trIssuReason").hide();
+			$("#issuReason").attr("disabled", true);
+
+			if(cvIsu != null){
+				var cvisuNo = cvIsu.CVISU_NO,
+					carRegistNo = cvIsu.CAR_REGIST_NO,
+					crtfNo = cvIsu.CRTF_NO,
+					ecoNo = cvIsu.ECO_NO,
+					ecoStndrdNo = cvIsu.ECO_STNDRD_NO,
+					carNm = cvIsu.CAR_NM,
+					ownerNm = cvIsu.OWNER_NM,
+					issuSe = cvIsu.ISSU_SE,
+					issuCnt = cvIsu.ISSU_CNT,
+					areaSiNm = cvIsu.AREA_SI_NM,
+					/*crtfYear = cvIsu.CRTF_YEAR,*/
+					carRgsde = cvIsu.CAR_RGSDE,
+					cvisuReqSn = cvIsu.CVISU_REQ_SN,
+					vin = cvIsu.VIN,
+					ownerAdres = cvIsu.OWNER_ADRES,
+					ownerIhidnum = cvIsu.OWNER_IHIDNUM,
+					areaSe = cvIsu.AREA_SE,
+					areaSiSe = cvIsu.AREA_SI_SE,
+					carKndCode = cvIsu.CAR_KND_CODE,
+					odncYn = cvIsu.ODNC_YN,
+					usefuelnm = cvIsu.USEFUELNM
+					;
+				
+				if (cvisuNo == null || cvisuNo == 'null') cvisuNo = '';
+				if (carRegistNo == null || carRegistNo == 'null') carRegistNo = '';
+				if (crtfNo == null || crtfNo == 'null') crtfNo = '';
+				if (ecoNo == null || ecoNo == 'null') ecoNo = '';
+				if (ecoStndrdNo == null || ecoStndrdNo == 'null') ecoStndrdNo = '';
+				if (carNm == null || carNm == 'null') carNm = '';
+				if (ownerNm == null || ownerNm == 'null') ownerNm = '';
+				if (issuSe == null || issuSe == 'null') issuSe = '';
+				if (issuCnt == null || issuCnt == 'null') issuCnt = '';
+				if (areaSiNm == null || areaSiNm == 'null') areaSiNm = '';
+				//if (crtfYear == null || crtfYear == 'null') crtfYear = '';
+				if (carRgsde == null || carRgsde == 'null') carRgsde = '';
+				if (cvisuReqSn == null || cvisuReqSn == 'null') cvisuReqSn = '';
+				if (vin == null || vin == 'null') vin = '';
+				if (ownerAdres == null || ownerAdres == 'null') ownerAdres = '';
+				if (ownerIhidnum == null || ownerIhidnum == 'null') ownerIhidnum = '';
+				if (areaSe == null || areaSe == 'null') areaSe = '';
+				if (areaSiSe == null || areaSiSe == 'null') areaSiSe = '';
+				if (carKndCode == null || carKndCode == 'null') carKndCode = '';
+				if (odncYn == null || odncYn == 'null') odncYn = '';
+				else if (odncYn == '1') odncYn = 'O';
+				else if (odncYn == '0') odncYn = 'X';
+				
+				$form.find("#CVISU_NO").text(cvisuNo);
+				$form.find("#CAR_REGIST_NO").text(carRegistNo);
+				$form.find("#CRTF_NO").text(crtfNo);
+				$form.find("#ECO_NO").text(ecoNo+"종");
+				$form.find("#ECO_STNDRD_NO").text(ecoStndrdNo);
+				$form.find("#CAR_NM").text(carNm);
+				$form.find("#OWNER_NM").text(ownerNm);
+				//$form.find("#ISSU_SE").text(issuSe);
+				$form.find("#ISSU_CNT").text(issuCnt);
+				$form.find("#AREA_SI_NM").text(areaSiNm); 	 
+				//$form.find("#CRTF_YEAR").text(crtfYear);
+				$form.find("#CAR_RGSDE").text(carRgsde);
+				$form.find("#ODNC_YN").text(odncYn);
+				
+				$form.find("#USEFUELNM").text(usefeulnm);
+				
+				$("#ecoStndrdNo").val("");
+				
+				Message.alert("[표지발급완료] 발급번호 :" + cvisuNo, function() {
+					$('#vinNm').focus();
+				});
+			} else {
+				var msg = '';
+				var errMsg = resultJson.errorMsg;
+				if (errMsg == '' || errMsg == undefined || errMsg == 'null') {
+					errMsg = resultJson._resultMessage;
+				}
+				
+				// 표지발급 정보 초기화
+				$form.find("#CVISU_NO").text("");
+				$form.find("#CAR_REGIST_NO").text("");
+				$form.find("#CRTF_NO").text("");
+				$form.find("#ECO_NO").text("");
+				$form.find("#ECO_STNDRD_NO").text("");
+				$form.find("#CAR_NM").text("");
+				$form.find("#OWNER_NM").text("");
+				//$form.find("#ISSU_SE").text("");
+				$form.find("#ISSU_CNT").text("");
+				$form.find("#AREA_SI_NM").text("");
+				//$form.find("#CRTF_YEAR").text("");
+				$form.find("#CAR_RGSDE").text("");
+				$form.find("#ODNC_YN").text("");
+				
+				$form.find("#USEFUELNM").text("");
+				
+				Message.alert(errMsg);
+				$('#vinNm').focus();
+			}
+			
+			// 요청정보 초기화
+			$("#saveCvisuNo").val("");
+			$("#saveCvisuReqSn").val("");
+			$("#saveCarRegistNo").val("");
+			$("#saveVin").val("");
+			$("#saveVinNm").val("");
+			$("#saveEcoStndrdNo").val("");
+			$("#saveCarNm").val("");
+			$("#saveOwnerAdres").val("");
+			$("#saveOwnerNm").val("");
+			$("#saveOwnerIhidnum").val("");
+			$("#saveAreaSe").val("");
+			$("#saveAreaSiSe").val("");
+			$("#saveCrtfNo").val("");
+			$("#saveCarKndCode").val("");
+			$("#saveCarRgsde").val("");
+			$("#saveLocalGovSe").val("");
+		}
+		
+		//주민번호 유효성 검사
+		function ssnCheck(zumin1,zumin2){
+			var val1 = $("#"+zumin1).val();
+			var val2 = $("#"+zumin2).val();
+			if(!val2 && !val2)return;
+			var value = val1+""+val2;
+			var checkNum = [2,3,4,5,6,7,8,9,2,3,4,5];
+			var sum = 0;
+			for(var i=0; i< checkNum.length ; i++){
+				var tmp = value.charAt(i)*checkNum[i];
+				//alert(value.charAt(i)+":"+checkNum[i]+":"+tmp);
+				sum += tmp;
+			}
+
+			var pin = 11-(sum%11);
+			if(pin>=10) pin = pin-10;
+
+			if(value.charAt(12)==pin){
+				//return true;
+			}else{
+				//return false;
+				//Message.alert("입력하신 주민번호는 유효한 주민번호가 아닙니다.");
+				Message.alert("입력하신 주민번호는 유효한 주민번호가 아닙니다.", function() {
+					$('#ownerIhidnum1').focus();
+				});
+				$("#"+zumin1).val("");$("#"+zumin2).val("")
+			}
+		}
+		
+		function onclick_checkbox() {
+		    $.cookie('notice.popup.check', 'close', { expires: 1, path : '/' });
+		    $("#btnClose").click();
+		}
+
+		// 차대번호 확인
+		function chkVin() {
+			var vinNm = $("#vinNm").val();
+        	vinNm = $.trim(vinNm);
+			if( vinNm.length==0){
+				Message.alert("차대번호를 입력해주세요.", function() {
+					$('#vinNm').focus();
+				});
+			} else if (vinNm.length != 17) {
+				Message.alert("차대번호는 영문, 숫자 조합 17자리 입니다.", function() {
+					$('#vinNm').focus();
+				});
+			} else {
+				$("#btnChkVin").hide();
+				$("#chkVin").val("Y");
+			}
+		}
+    </script>
+</head>
+
+<body>
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+
+
+
+<div id="wrap">
+
+    <form name="_loginForm" method="post" action="">
+        <input type="hidden" name="_loginUserId" />
+        <input type="hidden" name="_loginUserPw" />
+    </form>
+
+	<form name="_menuForm" method="post" action="">
+        <input type="hidden" name="menuId" value="" />
+    </form>
+
+    <div id="u_skip">
+        <a href="#container"><span>본문으로 바로가기</span></a>
+    </div>
+
+    <div class="header">
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+
+
+<div class="inner">
+    <h1 class="logo"><a href="javascript:goMain();" class="sp_img sp_hlogo">무공해차 통합누리집</a></h1>
+    <div class="util">
+        <div class="fr">
+            <span class="invite">방문을 환영합니다.</span>
+            <strong class="txt_me">서울시노원구3님 방문을 환영합니다. <br/>( IP: 203.142.217.230 최종접속시간 : 2022-03-25 15:02:35 )</strong>
+            <ul class="util_menu">
+                <!-- li><a href="javascript:BizUtils.openMymenuPopup();" class="btn_type3">즐겨찾기</a></li -->
+                <li><a href="javascript:BizUtils.memberChange();" class="btn_type2">정보변경</a></li>
+                <li><a href="javascript:logout();" class="btn_type3">로그아웃</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+     
+    </div>
+    <hr />
+
+
+
+    
+    <div id="container" class="container">
+        <div class="inner">
+        	
+        	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="snb">
+
+    <div class="snb_header">
+		<h2><img src="/lcvms-mncpt/docs/img/ico_m02.png" alt="표지발급관리" style="margin-top:5px;" />표지발급관리</h2>
+    </div>
+    <div class="snb_menu">
+        <ul>
+
+            <li class="active"><a href="javascript:void(0);" title="표지발급관리">표지발급관리</a>
+
+                <ul>
+
+
+                    <li class="active"><a href="javascript:goMenu('MO00400199');">표지발급</a></li>
+
+
+                    <li class=""><a href="javascript:goMenu('MO00400200');">발급조회</a></li>
+
+                </ul>
+            </li>
+
+
+            <li class=""><a href="javascript:void(0);" title="공지사항">공지사항</a>
+
+                <ul>
+
+
+                    <li class=""><a href="javascript:goMenu('MO00400201');">공지사항조회</a></li>
+
+                </ul>
+            </li>
+
+
+        </ul>
+    </div>
+
+
+</div>
+
+
+
+            
+            <div class="content">
+                <h4 class="h_tit">저공해차 표지발급 시스템</h4>
+                <form name="form"  method="post">
+                	<!-- <input type="hidden" name="VIN" id="VIN" value="" /> -->
+                	<input type="hidden" name="chkVin" id="chkVin" value="N" />
+                    
+                    
+                    <div class="select_lst">
+                        <table>
+                            <tbody>
+                            
+                            <tr>
+                                <th style="width:30%;"><label for="vinNm"><span class="dot">&middot; </span>차대번호</label></th>
+                                <td style="width:40%;">
+                                	<input type="text" name="vinNm" id="vinNm" value="" style="width:50%" class="filter[17,17]:require:upper:num:eng:enter[enterSearch]" />
+                                	<a id="btnChkVin" href="javascript:chkVin();" class="btn_type2" style="display:none;">차대번호확인</a>
+                                </td>
+                                <td style="width:30%;" rowspan="4">
+                                    <div class="select_lst_chk">
+                                        <a href="#" id="btnSearch" class="btn_inquire" style="float:left;"><img src="/lcvms-mncpt/docs/ecoGov/img/btn_confirm.png" alt="확인" /></a>
+                                        &nbsp;<a href="javascript:pageInit()" class="btn_type4 mb2" style="float:left;margin-left:10px;">초기화</a>
+                                    </div>
+                                    
+                                </td>
+                            </tr>
+                            <tr>
+                                <th><label for="carRegistNo"><span class="dot">&middot; </span>차량등록번호</label></th>
+                                <td><input type="text" name="carRegistNo" id="carRegistNo" value="" style="width:50%" class="filter:enter[enterSearch]" /></td>
+                            </tr>
+                            <tr>
+                                <th><label for="ecoStndrdNo"><span class="dot">&middot; </span>제원번호</label></th>
+                                <td>
+                                	<input type="text" id="ecoStndrdNo" name="ecoStndrdNo" value="" lengthtype="length" maxlength="17" style="width:50%;background: rgb(255, 255, 255); text-transform: uppercase; -ms-ime-mode: disabled;" disabled />
+                                </td>
+                            </tr>
+							<tr>
+                                <th><label for="crtfNo"><span class="dot">&middot; </span>인증번호</label></th>
+                                <td>
+                                	<input type="text" id="crtfNo" name="crtfNo" value="" maxlength="12" class="filter[12,12]:upper" style="width:50%;-ms-ime-mode: disabled;" disabled />
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>     
+                    
+                    
+                    <div class="lst_type type2">
+                    <ul>
+                    <li>
+                    	<span class="txt_orange">* </span>차대번호와 차량등록번호로 차량정보를 조회하실 수 있습니다. 차량등록번호 확인 시 <span class="txt_red">차대번호가 자동차등록증과 맞는지 확인 바랍니다.</span>
+                    	<br/>
+                    	<span class="txt_orange">* </span>차대번호가 틀리거나 없을 경우 차대번호를 직접입력 후 다시한번 [확인] 버튼을 눌러주세요.
+                    	<br/>
+                    	<br/>
+                    	<span class="txt_orange">* </span>차대번호(예: KNAGV01DBH0000000), 차량등록번호(예: 11가1111)
+                    	<br/>
+                    	<span class="txt_orange">* </span>제원번호(예: A0110003500701105)
+						<br/>
+                    	<span class="txt_orange">* </span>인증번호는 미조회차량발급 시 필수 항목 입니다. (예: TMY-HD-13-01)
+                    	<br/>
+						<span class="txt_orange">* </span>차량정보 조회시 <span style="font-weight:bold;color:blue;">등록일자가 없는 차량정보</span>는 <span style="font-weight:bold;color:#ff0000;">저공해차에 해당하지 않거나</span>, <span style="font-weight:bold;color:#ff0000;">당일등록차량</span> 또는 차량정보가 누락된 경우입니다.
+						<br/>&nbsp;&nbsp;&nbsp; - <span style="font-weight:bold;color:blue;">당일등록차량</span>이 저공해차에 해당하는 경우 <span style="font-weight:bold;color:#ff0000;">차량등록 다음날 시스템에서 확인</span>할 수 있습니다.
+                    	<br/>
+						<br/>
+                    	<span class="txt_red">* </span><span style="font-weight:900;color:#ff0000;">2020.4.3 부터</span> 법개정으로 인하여 <span style="font-weight:bold;color:#ff0000;">경유를 연료로 하는 자동차는 저공해차에서 제외</span>되었습니다.
+                    </li>
+                    </ul>
+                	</div>     
+                    
+                    <!-- 표지판정보 -->
+                    <div class="split_area" id="issu_info" style="width:100%;display:black;">
+                        <div class="wr_tbl">
+                            <h3 class="h_tit3">저공해자동차 표지발급
+                            <div class="btn_group">
+                                <ul>
+                                    <li><span id="name" style="color:red"></span><span id="txt"></span></li>
+                                </ul>
+                            </div>
+                            </h3>
+                            <table>
+                            <caption>신청 정보</caption>
+                            <colgroup>
+                            <col style="width:20%">
+                            <col style="width:30%">
+                            <col style="width:25%">
+                            <col style="width:25%">
+                            </colgroup>
+                            <tbody>
+                            <tr>
+                                <th style="background:#EDFFE7"><label for="ipt_dummy"><span class="dot">· </span>발급번호</label></th>
+                                <td id="CVISU_NO"></td>
+                                <th style="background:#EDFFE7"><label for="ipt_dummy"><span class="dot">· </span>저공해차 종류</label></th>
+                                <td id="ECO_NO"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#EDFFE7"><label for="ipt_dummy"><span class="dot">· </span>인증번호</label></th>
+                                <td id="CRTF_NO"></td>
+                                <th style="background:#EDFFE7"><label for="ipt_dummy"><span class="dot">· </span>제원번호</label></th>
+                                <td id="ECO_STNDRD_NO"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#EDFFE7"><label for="ipt_dummy"><span class="dot">· </span>자동차명칭</label></th>
+                                <td id="CAR_NM"></td>
+                                <th style="background:#EDFFE7"><label for="ipt_dummy"><span class="dot">· </span>자동차등록번호</label></th>
+                                <td id="CAR_REGIST_NO"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#EDFFE7"><label for="ipt_dummy"><span class="dot">· </span>성명</label></th>
+                                <td id="OWNER_NM"></td>
+                                
+                                <th style="background:#EDFFE7"><label for="ipt_dummy"><span class="dot">· </span>발급횟수</label></th>
+                                <td id="ISSU_CNT"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#EDFFE7"><label for="ipt_dummy"><span class="dot">· </span>지역</label></th>
+                                <td id="AREA_SI_NM"></td>
+                                <!-- <th style="background:#EDFFE7"><label for="ipt_dummy"><span class="dot">· </span>인증년도</label></th>
+                                <td id="CRTF_YEAR"></td> -->
+                                <th style="background:#EDFFE7"><label for="ipt_dummy"><span class="dot">· </span>등록일자</label></th>
+                                <td id="CAR_RGSDE"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#EDFFE7"><label for="ipt_dummy"><span class="dot">· </span>조례제정여부</label></th>
+                                <td id="ODNC_YN"></td>
+                                <th style="background:#EDFFE7"><label for="ipt_dummy"><span class="dot">· </span>사용연료</label></th>
+                                <td id="USEFUELNM"></td>
+                            </tr>
+                            <tr id="trIssuReason">
+                                <th style="background:#EDFFE7"><label for="ipt_dummy"><span class="dot">· </span>재발급사유</label></th>
+                                <td colspan="3">
+                                	<input type="text" id="issuReason" name="issuReason" value="" class="filter[60]:require:enter[enterSearch]" maxlength="60" style="width:90%;background: rgb(255, 255, 255);" disabled />
+                                </td>
+                            </tr>
+                            </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- 신청정보 -->
+                    <!-- button -->
+                    <div class="btn_group2" style="margin-top:20px;">
+                    	<a id="btnCvisu" href="javascript:setCvisu();" class="btn_type2">표지발급</a>
+                    	<a id="btnForcedCvisu" href="javascript:setForcedCvisu();" class="btn_type2">임의표지발급</a>
+                        <!-- <a href="javascript:goCvisInfo();" class="btn_type2">저공해차 표지발급 조회</a> -->
+                    </div>
+                    <!-- button -->
+                </form>
+                
+                <form  id="saveForm" name="saveForm" method="post">
+                	
+                	<input type="hidden" id="saveCvisuReqSn" name="saveCvisuReqSn" value="" />
+                	<input type="hidden" id="saveCarRegistNo" name="saveCarRegistNo" value="" />
+                	<input type="hidden" id="saveVin" name="saveVin" value="" />
+                	<input type="hidden" id="saveVinNm" name="saveVinNm" value="" />
+                	<input type="hidden" id="saveEcoStndrdNo" name="saveEcoStndrdNo" value="" />
+                	<input type="hidden" id="saveCarNm" name="saveCarNm" value="" />
+                	<input type="hidden" id="saveOwnerAdres" name="saveOwnerAdres" value="" />
+                	<input type="hidden" id="saveOwnerNm" name="saveOwnerNm" value="" />
+                	<input type="hidden" id="saveOwnerIhidnum" name="saveOwnerIhidnum" value="" />
+                	<input type="hidden" id="saveAreaSe" name="saveAreaSe" value="" />
+                	<input type="hidden" id="saveAreaSiSe" name="saveAreaSiSe" value="" />
+                	<input type="hidden" id="saveCrtfNo" name="saveCrtfNo" value="" />
+                	<input type="hidden" id="saveCarKndCode" name="saveCarKndCode" value="" />
+                	<input type="hidden" id="saveCarRgsde" name="saveCarRgsde" value="" />
+                	<input type="hidden" id="saveLocalGovSe" name="saveLocalGovSe" value="" />
+                </form>
+            </div>
+            
+
+        </div>
+    </div>
+    
+	
+	<div id="DLayer" style="display:none; position: absolute; z-index: 10;">
+		<div class="layerpop pop_layer2" style="margin:0 auto; height:auto; background-color:#fff;border:1px solid #3571B5;">
+			<div class="layer2" style="opacity:1.0;">
+				<div class="pop_header">
+						<h2>공지사항</h2>
+				</div>
+				<div class="pop_container pop_wrap">
+					<div class="pop_conts">
+		    			<div class="inner">
+		    				<div class="content">
+		    					<div class="headtext"><strong id="headtext1"></strong></div>
+		    					<div class="subhtext" id="subhtext1"></div>
+		    					<br/>
+		                        <div height="20">&nbsp;</div>
+								<div class="btn_group2">
+									<input type='checkbox' title='선택' id='ipt' name='event' style='margin-top: 5px;' onclick='onclick_checkbox()'><label for='ipt'> 오늘은 이창을 열지 않습니다.</label><br/>
+									<br/>
+									<a href="#" id="reqBtnClose1" class="btn_type4">닫기</a>
+								</div>
+								<div class="btn_r">
+									<a href="#" id="reqBtnClose2" class="cbtn close-reveal-modal"><img src="/lcvms-mncpt/docs/img/btn_close.png" height="19" width="19" alt="닫기"></a>
+								</div>
+		                        <br>
+		    				</div>
+		    			</div>
+		    		</div>
+		        </div>
+			</div>
+		</div>
+	</div>
+	
+	<form name="popForm" id="popForm" action="" method="post">
+		<input type="hidden" name="sj" id="sj">
+		<input type="hidden" name="cn" id="cn">    
+	</form>
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+
+
+<script type="text/javascript">
+function goMenuFooter(menuId, isUri) {
+	
+	//var CONTEXT_PATH_FOOTER = "http://localhost:8080/lcvms-portal";
+	var CONTEXT_PATH_FOOTER = "http://www.hybridbonus.or.kr";
+	
+	window.open(CONTEXT_PATH_FOOTER + menuId, "_blank", "width=1300,height=1000,top=20,left=50,scrollbars=yes,location=yes");
+    //var $menuForm = $(getForm("_menuForm"));
+    //------------------------------------------------------------
+    //$menuForm.attr("action", CONTEXT_PATH_FOOTER + menuId);
+    
+    //------------------------------------------------------------
+    //formSubmit($menuForm[0], true);
+}
+</script>
+
+
+<hr />
+<!-- footer -->
+<div class="footer">
+    <div class="inner">
+        <ul class="footer_util">
+            <li><a href="javascript:goMenuFooter('/P090000007SF01.do?fromBiz=1', true);" class="sp_img ft_privacy">개인정보처리방침</a></li>
+            <li><a href="#" class="sp_img ft_copyr">저작권보호정책</a></li>
+            <li><a href="#" class="sp_img ft_email">이메일무단수집거부</a></li>
+            <li><a href="#" class="sp_img ft_rss">RSS안내</a></li>
+            <li><a href="#" class="sp_img ft_error">홈페이지오류신고</a></li>
+        </ul>
+        <p class="footer_copyr">
+            <img src="/lcvms-mncpt/docs/img/img_copyright.png" height="29" width="842" alt="404-708)인천광역시 서구 환경로 42(경서동 종합환경연구단지) | 대표전화 032-590-4000 | EPR 및 분리배출 	032-590-4205 | 올바로시스템 1644-0007 | Fax 032-590-3229 COPYRIGHT 2014 KECO. ALL RIGHT RESERVED." />
+        </p>
+    </div>
+</div>
+
+</div>
+
+
+
+
+
+
+
+
+<input type="hidden" name="_resultMessage" id="_resultMessage" value="" />
+
+<input type="hidden" name="_IS_ERROR" id="_IS_ERROR" value="" />
+<input type="hidden" name="_ERROR_MESSAGE" id="_ERROR_MESSAGE" value="" />
+<input type="hidden" name="_ERROR_MESSAGE_STACK" id="_ERROR_MESSAGE_STACK" value="" />
+
+
+<div id="wrapProductInstallArea" style="display:none;width:0;height:0;"></div>
+
+</body>
+</html>

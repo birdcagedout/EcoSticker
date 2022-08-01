@@ -1,7 +1,7 @@
 //================================================================================
 // 공통 스크립트
-// Utility 와 관련된 내용이 기술되어 있다.
-// (단위기능 유틸리티, 팝업 등)
+// Flow 와 관련된 내용이 기술되어 있다.
+// (submit, init 등)
 //--------------------------------------------------------------------------------
 // jQuery 1.8+ 버전 dependency
 //--------------------------------------------------------------------------------
@@ -9,1128 +9,1145 @@
 // 작성일자 : 2014.09.02
 //================================================================================
 
-
-Utils = function($) {
-    /**
-     * ECMAScript 5 Strict Mode.
-     */
-    "use strict";
+var Message = ext.message;  // Message 설정
+var lazyForm = null;  // lazy form
+var lazyCallback = null;  // lazy callback
 
 
-    return {
-        /** 윈도우 오픈 객체 */
-        winObj: null,
-        window: {
-            /**
-             * ViewPort를 가져온다.
-             */
-            getViewport: function() {
-                return {
-                    width: $(window.top).outerWidth(),
-                    height: $(window.top).outerHeight()
-                };
-            },
-            /**
-             * window popup 을 open 한다.
-             * (내부 전용 function)
-             *
-             * @param form    form Object
-             * @param url     URL
-             * @param winName window 이름
-             * @param w       window 넓이
-             * @param h       window 높이
-             * @param x       window X 위치
-             * @param y       window Y 위치
-             * @param scroll  스크롤 표시 여부
-             * @returns window object
-             */
-            abstractWindowOpen: function(form, url, winName, w, h, x, y, scroll) {
-                var view = Utils.window.getViewport();
-                //--------------------------------------------------------------------------------
-                x = parseInt(view.width / 2) - parseInt(w / 2) + (x || 0);
-                y = parseInt(view.height / 2) - parseInt(h / 2) + (y || 0);
-                //--------------------------------------------------------------------------------
-                x = parseInt(x, 10) + window.screenLeft;
-                y = parseInt(y, 10) + window.screenTop;
-                //--------------------------------------------------------------------------------
-                var features = "left=" + x + ",top=" + y + ",width=" + w + ",height=" + h + ",scrollbars=" + scroll + ",menubar=no,toolbar=no,location=no,directories=no,status=no,resizable=no";
-                //--------------------------------------------------------------------------------
-                Utils.winObj = window.open("", winName, features);
-                //--------------------------------------------------------------------------------
-                form.action = url;
-                form.target = winName;
-                form.method = "post";
-                form.submit();
-                form.target = "_self";
-                form.action = "";
-                //--------------------------------------------------------------------------------
-                return Utils.winObj;
-            },
-            /**
-             * window popup 을 open 한다.
-             *
-             * @param form [object] form object
-             * @param url [String] URL
-             * @param winName [String] window object name
-             * @param width [int] 팝업넓이
-             * @param height [int] 팝업높이
-             * @returns {Object} window object
-             */
-            openPopup: function(form, url, winName, width, height) {
-                var posX = 0;
-                var posY = 0;
-                //--------------------------------------------------------------------------------
-                return Utils.window.abstractWindowOpen(getForm(form), url, winName, width, height, posX, posY, "no");
-            },
-            /**
-             * modal popup 을 open 한다.
-             * (IE 에서만 사용 가능.)
-             * (Chrome v37 부터 window.showModalDialog 기능이 제거 됨)
-             *
-             * @param url [String] URL
-             * @param paramObj [Object] Parameter
-             * @param width [int] 팝업넓이
-             * @param height [int] 팝업높이
-             * @param scroll [boolean] [option] scroll 표시 여부
-             * @param isProcess [boolean] [option] 서비스수행여부(default:true)
-             * @returns {Object} return value
-             */
-            openModalPopup: function(url, paramObj, width, height, scroll, isProcess) {
-                //------------------------------------------------------------
-                // 현재 세션 유효성 체크
-                //------------------------------------------------------------
-                if(checkSession()) {
-                    var view = Utils.window.getViewport();
-                    //--------------------------------------------------------------------------------
-                    var x = 0;
-                    var y = 0;
-                    //--------------------------------------------------------------------------------
-                    x = parseInt(view.width / 2) - parseInt(width / 2) + (x || 0);
-                    y = parseInt(view.height / 2) - parseInt(height / 2) + (y || 0);
-                    //--------------------------------------------------------------------------------
-                    x = parseInt(x, 10) + window.screenLeft;
-                    y = parseInt(y, 10) + window.screenTop;
-                    //--------------------------------------------------------------------------------
-                    var strParam = "";
-                    //--------------------------------------------------------------------------------
-                    for(var s in paramObj) {
-                        strParam += ((strParam == "") ? "?" : "&") + s + "=" + encodeURIComponent(paramObj[s]);
-                    }
-                    //--------------------------------------------------------------------------------
-                    strParam += ((strParam == "") ? "?" : "&") + "isProcess=" + ((isProcess != null && isProcess == false) ? "false" : "true");
-                    //--------------------------------------------------------------------------------
-                    var features = "dialogLeft:"+ x + "px;dialogTop:"+ y + "px;dialogWidth:"+ width + "px;dialogHeight:"+ height +"px;help:no;resizable:no;status:no;scroll:" + ((scroll) ? "yes" : "no") + ";center:yes";
-                    //--------------------------------------------------------------------------------
-                    return window.showModalDialog(url + strParam, "LCVMS", features);
-                    //var features = "width="+width+",height="+height+",scrollbars=yes,menubar=no,toolbar=no,location=no,directories=no,status=no,resizable=no";
-                    //return window.open(url, "LCVMS", features);
-                }
-                else {
-                    Message.alert("세션이 만료되었습니다.\n[확인] 버튼을 누르시면 메인 페이지로 이동합니다.", function() {
-                        if(window.dialogArguments) {
-                            WindowUtil.closeModalPopup(null);
-                        }
-                        else {
-                            goMain();
-                        }
-                    });
-                }
-            },
-            /**
-             * modal popup 을 닫는다.
-             *
-             * @param args return value
-             */
-            closeModalPopup: function(args) {
-                window.returnValue = args;
-                window.close();
-            },
-            openAPopup: function(url, paramObj, width, height, scroll, isProcess) {
-                //------------------------------------------------------------
-                // 현재 세션 유효성 체크
-                //------------------------------------------------------------
-                if(checkSession()) {
-                    var view = Utils.window.getViewport();
-                    //--------------------------------------------------------------------------------
-                    var x = 0;
-                    var y = 0;
-                    //--------------------------------------------------------------------------------
-                    x = parseInt(view.width / 2) - parseInt(width / 2) + (x || 0);
-                    y = parseInt(view.height / 2) - parseInt(height / 2) + (y || 0);
-                    //--------------------------------------------------------------------------------
-                    x = parseInt(x, 10) + window.screenLeft;
-                    y = parseInt(y, 10) + window.screenTop;
-                    //--------------------------------------------------------------------------------
-                    var strParam = "";
-                    //--------------------------------------------------------------------------------
-                    for(var s in paramObj) {
-                        strParam += ((strParam == "") ? "?" : "&") + s + "=" + encodeURIComponent(paramObj[s]);
-                    }
-                    //--------------------------------------------------------------------------------
-                    strParam += ((strParam == "") ? "?" : "&") + "isProcess=" + ((isProcess != null && isProcess == false) ? "false" : "true");
-                    var features = "width="+width+",height="+height+",scrollbars=" + ((scroll) ? "yes" : "no") + ",menubar=no,toolbar=no,location=no,directories=no,status=no,resizable=no";
-                    return window.open(url+ strParam, "LCVMS", features);
-                }
-                else {
-                    Message.alert("세션이 만료되었습니다.\n[확인] 버튼을 누르시면 메인 페이지로 이동합니다.", function() {
-                        if(window.dialogArguments) {
-                            WindowUtil.closeModalPopup(null);
-                        }
-                        else {
-                            goMain();
-                        }
-                    });
-                }
-            },
-            /**
-             * window 스크롤바 가로 사이즈 반환.
-             */
-            getScrollBarWidth: function() {
-                var inner = document.createElement("p");
-                var outer = document.createElement("div");
-                //------------------------------------------------------------
-                inner.style.width = "100%";
-                inner.style.height = "200px";
-                //------------------------------------------------------------
-                outer.style.position = "absolute";
-                outer.style.top = "0px";
-                outer.style.left = "0px";
-                outer.style.visibility = "hidden";
-                outer.style.width = "200px";
-                outer.style.height = "150px";
-                outer.style.overflow = "hidden";
-                //------------------------------------------------------------
-                outer.appendChild(inner);
-                document.body.appendChild(outer);
-                //------------------------------------------------------------
-                var w1 = inner.offsetWidth;
-                outer.style.overflow = "scroll";
-                var w2 = inner.offsetWidth;
-                //------------------------------------------------------------
-                if (w1 == w2) {
-                    w2 = outer.clientWidth;
-                }
-                //------------------------------------------------------------
-                document.body.removeChild(outer);
-                return (w1 - w2);
-            }
-        },
 
-
-        element: {
-            getClassName: function(element, className) {
-                var classValue = $(element).attr("class");
-                //------------------------------------------------------------
-                if(classValue.indexOf(className) > -1) {
-                    classValue = classValue.substring(classValue.indexOf(className));
-                }
-                //------------------------------------------------------------
-                if(classValue.indexOf(" ") > -1) {
-                    classValue = classValue.substring(0, classValue.indexOf(" "));
-                }
-                //------------------------------------------------------------
-                return classValue;
-            },
-            checkAll: function(form, element, targetName) {
-                $(getForm(form)).find("input[name=" + targetName + "]:checkbox").each(function() {
-                    if(!this.readOnly && !this.disabled) {
-                        this.checked = element.checked;
-                    }
+/**
+ * 화면 초기화
+ */
+function initApp() {
+    $(document).ready(function() {
+        //------------------------------------------------------------
+        // 현재 포커스 객체 저장
+        //------------------------------------------------------------
+        try {
+            $("a, :input").bind('click focus', function(event) {
+                currentFocusElement = $(this);
+            });
+        }
+        catch(e) {}
+        //------------------------------------------------------------
+        // 중복 서밋 방지 해제.
+        //------------------------------------------------------------
+        isSubmit = false;
+        //------------------------------------------------------------
+        // Validation 객체 생성
+        //------------------------------------------------------------
+        ExtValidation = new ext.validation();
+        //------------------------------------------------------------
+        // 페이지 블럭 해제.
+        //------------------------------------------------------------
+        loadingBlock(false);
+        //------------------------------------------------------------
+        // PKI 설치 여부 확인
+        //------------------------------------------------------------
+        if(checkPki()) {
+            PkiUtils.printTag(false);
+            //------------------------------------------------------------
+            if(!PkiUtils.isInstalled()) {
+                Message.alert("구간암호화 모듈이 설치되어 있지 않습니다.<br />확인 버튼을 선택하시면 cab 파일 설치를 진행합니다.", function() {
+                    PkiUtils.printTag(true);
                 });
-            }
-        },
-
-
-        input: {
-        },
-
-
-        date: {
-            initSystemTime: function(systemTime) {
-                SYSTEM_TIME = systemTime;
-                //------------------------------------------------------------
-                if(SYSTEM_TIME && SYSTEM_TIME != "") {
-                    var sysDt = new Date(parseInt(SYSTEM_TIME, 10));
-                    var localdt = new Date();
-                    //------------------------------------------------------------
-                    SYSTEM_TO_LOCAL_TIME = sysDt.valueOf() - localdt.valueOf();
-                }
-            },
-            getSystemDate: function() {
-                var localDt = new Date();
-                return new Date(localDt.valueOf() + SYSTEM_TO_LOCAL_TIME);
-            },
-            getSystemTime: function() {
-                return this.toTimeString(this.getSystemDate());
-            },
-            /**
-             * 현재 年을 YYYY형식으로 리턴
-             */
-            getYear: function() {
-                return this.getSystemDate().getFullYear();
-            },
-            /**
-             * 현재 月을 MM형식으로 리턴
-             */
-            getMonth: function() {
-                var month = this.getSystemDate().getMonth() + 1;
-                return month < 10 ? "0" + month : "" + month;
-            },
-            /**
-             * 현재 日을 DD형식으로 반환
-             */
-            getDay: function() {
-                var day = this.getSystemDate().getDate();
-                return day < 10 ? "0" + day : "" + day;
-            },
-            /**
-             * 현재 Hour 을 HH형식으로 반환
-             */
-            getHour: function() {
-                var hour = this.getSystemDate().getHours();
-                return hour < 10 ? "0" + hour : "" + hour;
-            },
-            /**
-             * 현재 Minute 을 MM형식으로 반환
-             */
-            getMin: function() {
-                var min = this.getSystemDate().getMinutes();
-                return min < 10 ? "0" + min : "" + min;
-            },
-            /**
-             * 현재 Second 을 SS형식으로 반환
-             */
-            getSec: function() {
-                var sec = this.getSystemDate().getSeconds();
-                return sec < 10 ? "0" + sec : "" + sec;
-            },
-            /**
-             * YYYYMMDD 로 오늘 날짜 반환
-             */
-            getToday: function() {
-                return this.getYear().toString() + this.getMonth().toString() + this.getDay().toString();
-            },
-            /**
-             * YYYY-MM-DD 로 오늘 날짜 반환
-             * (sep 가 없으면 기본적으로 "-" 로 붙임)
-             */
-            getTodayFmt: function(sep) {
-                if(!sep && sep === "") {
-                    sep = "-";
-                }
-                //--------------------------------------------------------------------------------
-                return this.getYear().toString() + sep + this.getMonth().toString() + sep + this.getDay().toString();
-            },
-            /**
-             * YYYY-MM-DD HH:MM:SS 로 오늘 날짜 시간 반환
-             */
-            getTodayTimeFormat: function() {
-                return this.getYear() + "-" + this.getMonth() + "-" + this.getDay() + " " + this.getHour() + ":" + this.getMin() + ":" + this.getSec();
-            },
-            /**
-             * 특정일자에 년을 더한 날짜를 구한다.
-             */
-            getAddYears: function(years, date) {
-                return this.getAddMonths(parseInt(years) * 12, date);
-            },
-            /**
-             * 특정일자에 월를 더한 날짜를 구한다.(한편 넣기)
-             * EX) getAddMonths("2") 현재일 20090212 이면 return 값은 20090411
-             */
-            getAddMonths: function(addMonth, date, sep) {
-                var before = date ? date : this.getToday();
-                var year = Number(before.substring(0, 4));
-                var mon = Number(before.substring(4, 6));
-                var date = Number(before.substring(6, 8));
-                //------------------------------------------------------------
-                // 이전/다음 월을 구함.
-                //------------------------------------------------------------
-                var result = new Date(year, mon + addMonth, 0);
-                year = result.getFullYear();
-                mon = result.getMonth() + 1;
-                //------------------------------------------------------------
-                // 해당월의 마지막 일자.
-                //------------------------------------------------------------
-                var lastDay = DateUtil.getLastDay(year, mon);
-                //------------------------------------------------------------
-                // 만으로 월을 계산하기 위하여 이전이면 +1 일 이후이면 -1 을 해준다.
-                //------------------------------------------------------------
-                if(addMonth < 0 && lastDay < (date + 1)) {
-                    result = new Date(year, mon, 1);
-                }
-                else if(addMonth > 0 && lastDay < (date - 1)) {
-                    result = new Date(year, mon - 1, lastDay);
-                }
-                else {
-                    result = new Date(year, mon - 1, addMonth < 0 ? (date + 1) : (date - 1));
-                }
-                //------------------------------------------------------------
-                year = result.getFullYear();
-                mon  = result.getMonth() + 1;
-                date = result.getDate();
-                //------------------------------------------------------------
-                return year + (sep ? sep : '') + (mon < 10 ? '0' + mon : mon) + (sep ? sep : '') + (date < 10 ? '0' + date : date);
-            },
-            /**
-             * 특정일자에 일자를 더한 날짜를 구한다.
-             * EX) getAddDays("2") 현재일 20090212 이면 return 값은 20090214
-             */
-            getAddDays: function(days, date) {
-                var before = date ? date : this.getToday();
-                var date   = new Date(before.substring(0, 4), Number(before.substring(4, 6)) - 1, Number(before.substring(6, 8))+ Number(days));
-                var year   = String(date.getFullYear());
-                var month  = String(date.getMonth() + 1);
-                var day    = String(date.getDate());
-                //------------------------------------------------------------
-                if(month.length == 1) {
-                    month = "0" + month;
-                }
-                //------------------------------------------------------------
-                if(day.length == 1) {
-                    day = "0" + day;
-                }
-                //------------------------------------------------------------
-                return "" + year + "" + month + "" + day;
-            },
-            /**
-             * 해당 월의 마지막일자를 구한다.
-             */
-            getLastDay: function(year, mon) {
-                var month = mon - 1;
-                var d = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-                //------------------------------------------------------------
-                if(((0 == (year % 4)) && ((0 != (year % 100)) || (0 == (year % 400)))) && month == 1) {
-                    return 29;
-                }
-                else {
-                    return d[month];
-                }
-            },
-            /**
-             * 현재달의 첫 일자를 구한다.
-             */
-            getMonthFirstDay: function(gbn) {
-                var systemDate  = this.getSystemDate();
-                var currentDate = new Date(systemDate.getFullYear(), systemDate.getMonth());
-                //------------------------------------------------------------
-                var year  = currentDate.getFullYear();
-                var month = currentDate.getMonth() + 1;
-                //------------------------------------------------------------
-                if(("" + month).length == 1) {
-                    month = "0" + month;
-                }
-                //------------------------------------------------------------
-                var date = currentDate.getDate();
-                //------------------------------------------------------------
-                if(("" + date).length == 1) {
-                    date = "0" + date;
-                }
-                //------------------------------------------------------------
-                return (year + gbn + month + gbn + date);
-            },
-            /**
-             * 현재달의 마지막 일자를 구한다.
-             */
-            getMonthLastDay: function(gbn) {
-                var systemDate  = this.getSystemDate();
-                var currentDate = new Date(systemDate.getFullYear(), systemDate.getMonth() + 1, "");
-                //------------------------------------------------------------
-                var year  = currentDate.getFullYear();
-                var month = currentDate.getMonth() + 1;
-                //------------------------------------------------------------
-                if(("" + month).length == 1) {
-                    month = "0" + month;
-                }
-                //------------------------------------------------------------
-                var date = currentDate.getDate();
-                //------------------------------------------------------------
-                if(("" + date).length == 1) {
-                    date = "0" + date;
-                }
-                //------------------------------------------------------------
-                return (year + gbn + month + gbn + date);
-            },
-            setDate: function(df) {
-                var isMiners = df.indexOf("-") > -1 ? -1 : 1;
-                var addVal = StringUtil.toNumber(df) * isMiners;
-                var date = df;
-                //------------------------------------------------------------
-                if(df == "today") {
-                    date = this.getToday();
-                }
-                else if (df.indexOf("addY") > -1) {
-                    date = this.getAddYears(addVal);
-                }
-                else if (df.indexOf("addM") > -1) {
-                    date = this.getAddMonths(addVal);
-                }
-                else if (df.indexOf("addW") > -1) {
-                    date = this.getAddDays(addVal * 7);
-                }
-                else if (df.indexOf("addD") > -1) {
-                    date = this.getAddDays(addVal);
-                }
-                //------------------------------------------------------------
-                return date;
-            }
-        },
-
-
-        string: {
-            fromToSubstr: function(org, start, end, endoffset) {
-                if(org.indexOf(start) == -1) {
-                    return "";
-                }
-                //------------------------------------------------------------
-                if(endoffset == undefined) {
-                    endoffset = 0;
-                }
-                //------------------------------------------------------------
-                var rt = org.substring(org.indexOf(start));
-                //------------------------------------------------------------
-                return (rt.indexOf(end) > -1) ? rt.substring(start.length, rt.indexOf(end, endoffset)) : rt.substring(start.length);
-            },
-            isHangul: function(str) {
-                if($.trim(str).length == 0) {
-                    return false;
-                }
-                //------------------------------------------------------------
-                var rtnData = false;
-                //------------------------------------------------------------
-                for(var idx = 0; idx < str.length; idx++) {
-                    var c = escape(str.charAt(idx));
-                    //------------------------------------------------------------
-                    if(c.indexOf("%u") > -1) {
-                        rtnData = true;
-                        break;
-                    }
-                }
-                //------------------------------------------------------------
-                return rtnData;
-            },
-            chkInputByte: function(str) {
-                str = str.toString();
-                var byteSize = 0;
-                //------------------------------------------------------------
-                for ( var i = 0; i < str.length; i++) {
-                    byteSize += StringUtil.strCharByte(escape(str.charAt(i)));
-                }
-                //------------------------------------------------------------
-                return byteSize;
-            },
-            getInputByte: function(str, maxbyte) {
-                str = str.toString();
-                var byteSize = 0;
-                //------------------------------------------------------------
-                for(var i = 0; i < str.length; i++) {
-                    byteSize += StringUtil.strCharByte(escape(str.charAt(i)));
-                    //------------------------------------------------------------
-                    if(maxbyte && byteSize > maxbyte) {
-                        return str.substring(0, i);
-                    }
-                }
-                //------------------------------------------------------------
-                return str;
-            },
-            strCharByte: function(char) {
-                if(char.substring(0, 2) == "%u") {
-                    return char.substring(2, 4) == "00" ? 1 : 2;
-                }
-                else if(char.substring(0, 1) == "%") {
-                    return parseInt(char.substring(1, 3), 16) > 127 ? 2 : 1;
-                }
-                else {
-                    return 1;
-                }
-            },
-            replaceAll: function(source, oldStr, newStr) {
-                return source.replace(new RegExp(oldStr, "g"), newStr);
-            },
-            toNumber: function(numStr) {
-                if(!numStr) {
-                    return "";
-                }
-                //------------------------------------------------------------
-                numStr = numStr + "";
-                //------------------------------------------------------------
-                var m = numStr.substring(0, 1) == "-";
-                var ret = numStr.replace(/[^\d]/g, "");
-                //------------------------------------------------------------
-                return m ? ("-" + ret) : ret;
-            },
-            toMoney: function(numStr) {
-                if(!numStr) {
-                    return "";
-                }
-                //------------------------------------------------------------
-                numStr = numStr.toString();
-                //------------------------------------------------------------
-                var m = numStr.substring(0, 1) == "-";
-                //------------------------------------------------------------
-                numStr = numStr.replace(/[^\d]/g, "");
-                numStr = StringUtil.formatCommas(numStr);
-                //------------------------------------------------------------
-                return m ? ("-" + numStr) : numStr;
-            },
-            toFloat: function(numStr, point) {
-                if(numStr == undefined) {
-                    numStr = "";
-                }
-                //------------------------------------------------------------
-                numStr = numStr + "";
-                //------------------------------------------------------------
-                if(numStr == "") {
-                    return 0;
-                }
-                //------------------------------------------------------------
-                if(point == undefined || point == "") {
-                    point = 2;
-                }
-                //------------------------------------------------------------
-                var data = numStr.split(".");
-                data[0] = parseInt(this.stripCommas(data[0]), 10);
-                //------------------------------------------------------------
-                if(data[1]) {
-                    data[1] = this.stripCommas(data[1]) + '000000000000';
-                    data[1] = data[1].substring(0, point);
-                    //------------------------------------------------------------
-                    return parseFloat(data[0] + "." + data[1]);
-                }
-                else {
-                    return parseFloat(data[0]);
-                }
-            },
-            toDate: function(dateStr, se) {
-                var re = "";
-                var replace = "";
-                var dateStrNoDash = this.toNumber(dateStr);
-                //------------------------------------------------------------
-                if(dateStrNoDash.length == 4) {
-                    re = /(\d{4})/;
-                    replace = "$1";
-                }
-                else if (dateStrNoDash.length == 5) {
-                    re = /(\d{4})/;
-                    replace = "$1" + se;
-                }
-                else if (dateStrNoDash.length == 6) {
-                    re = /(\d{4})(\d{2})/;
-                    replace = "$1" + se + "$2";
-                }
-                else if (dateStrNoDash.length == 7) {
-                    re = /(\d{4})(\d{2})/;
-                    replace = "$1" + se + "$2" + se;
-                }
-                else {
-                    re = /(\d{4})(\d{2})(\d{2})/;
-                    replace = "$1" + se + "$2" + se + "$3";
-                }
-                //------------------------------------------------------------
-                return dateStrNoDash.replace(re, replace);
-            },
-            formatCommas: function(numString) {
-                if(!numString) {
-                    return "";
-                }
-                //------------------------------------------------------------
-                numString = numString + "";
-                //------------------------------------------------------------
-                var re = /,|\s+/g;
-                var retNumString = numString.replace(re, "");
-                //------------------------------------------------------------
-                re = /(-?\d+)(\d{3})/;
-                //------------------------------------------------------------
-                while(re.test(retNumString)) {
-                    retNumString = retNumString.replace(re, "$1,$2");
-                }
-                //------------------------------------------------------------
-                return retNumString;
-            },
-            stripCommas: function(numString) {
-                return this.replaceAll(numString, ",", "");
-            },
-            stripTags: function(str) {
-                var RegExpTag = /[<][^>]*[>]/gi; // 태그제거
-                //------------------------------------------------------------
-                str = str.replace(RegExpTag, "");
-                //------------------------------------------------------------
-                var RegExpJS = "<script[^>]*>(.*?)</script>"; // 스크립트 제거
-                str = str.replace(RegExpJS, "");
-                //------------------------------------------------------------
-                var RegExpCSS = "<style[^>]*>(.*?)"; // 스타일 제거
-                str = str.replace(RegExpCSS, "");
-                //------------------------------------------------------------
-                var RegExpDS = /<!--[^>](.*?)-->/gi; // 주석 제거
-                str = str.replace(RegExpDS, "");
-                //------------------------------------------------------------
-                var RegExpPh = /document.|object|cookie|&/gi; // 특정 문장 제거.
-                str = str.replace(RegExpPh, "");
-                //------------------------------------------------------------
-                return str;
-            },
-            /**
-             * 한글 종성체크
-             */
-            isJongsong: function(wd) {
-                var INDETERMINATE = 0;
-                var NOJONGSONG = 1;
-                var JONGSONG = 2;
-                //------------------------------------------------------------
-                var word = String(wd); /* 숫자가 들어오는 등에 대비해 무조건 문자열로 바꿈 */
-                var numStr1 = "013678lmnLMN"; /* '조' 전까지는 0이 받침이 있는걸로 나옴 --; */
-                var numStr2 = "2459aefhijkoqrsuvwxyzAEFHIJKOQRSUVWXYZ";
-                //------------------------------------------------------------
-                /* bdgpt들은 읽기에 따라 받침이 있기도 하고 없기도 한다고 판단. */
-                /* 대문자는 단독으로 읽을 때를 감안하면 받침 있다고 확정되는 것이 더 적음. */
-                //------------------------------------------------------------
-                if(word == null || word.length < 1) {
-                    return INDETERMINATE;
-                }
-                //------------------------------------------------------------
-                var lastChar = word.charAt(word.length - 1);
-                var lastCharCode = word.charCodeAt(word.length - 1);
-                //------------------------------------------------------------
-                if(numStr1.indexOf(lastChar) > -1) {
-                    return JONGSONG;
-                }
-                else if(numStr2.indexOf(lastChar) > -1) {
-                    return NOJONGSONG;
-                }
-                //------------------------------------------------------------
-                if(lastCharCode < 0xac00 || lastCharCode > 0xda0c) {
-                    return INDETERMINATE;
-                }
-                else {
-                    var lastjongseong = (lastCharCode - 0xAC00) % (21 * 28) % 28;
-                    //------------------------------------------------------------
-                    if (lastjongseong == 0) {
-                        return NOJONGSONG;
-                    }
-                    else {
-                        return JONGSONG;
-                    }
-                }
-            },
-            /** 내부함수 (을/를) */
-            ul: function(s) {
-                if(StringUtil.isHangul(s)) {
-                    return s;
-                }
-                //------------------------------------------------------------
-                var ul0 = ["(을)를", "를", "을"];
-                //------------------------------------------------------------
-                return s + ul0[StringUtil.isJongsong(s)];
-            },
-            /** 내부함수 (이/가) */
-            ka: function(s) {
-                if(!StringUtil.isHangul(s)) {
-                    return s;
-                }
-                //------------------------------------------------------------
-                var ka0 = ["(이)가", "가", "이"];
-                //------------------------------------------------------------
-                return s + ka0[StringUtil.isJongsong(s)];
-            },
-            /** 내부함수 (은/는) */
-            un: function(s) {
-                if(!StringUtil.isHangul(s)) {
-                    return s;
-                }
-                //------------------------------------------------------------
-                var un0 = ["(은)는", "는", "은"];
-                //------------------------------------------------------------
-                return s + un0[StringUtil.isJongsong(s)];
-            },
-            /** 내부함수 (와/과) */
-            wa: function(s) {
-                if(!StringUtil.isHangul(s)) {
-                    return s;
-                }
-                //------------------------------------------------------------
-                var arr = ["(와)과", "와", "과"];
-                //------------------------------------------------------------
-                return s + arr[StringUtil.isJongsong(s)];
-            },
-            convert2ByteCharToString: function(is, isAllNum) {
-                //------------------------------------------------------------
-                // 만약 필드에 숫자만 들어가있다면 전각문자로 변환하지 않는다.
-                //------------------------------------------------------------
-                if(isAllNum) {
-                    if(!StringUtil.isHangul(is)) {
-                        return is;
-                    }
-                }
-                //------------------------------------------------------------
-                var os = ""; // 컨버트된 문자
-                var isBeforeSpace = false;
-                //------------------------------------------------------------
-                for(var i=0; i < is.length; i++) {
-                    var c = is.charCodeAt(i);
-                    //------------------------------------------------------------
-                    if(32 <= c && c <= 126) { // 전각으로 변환될수 있는 문자의 범위
-                        if(c == 32) {
-                            if(isBeforeSpace) { // 스페이스가 연속으로 2개 들어왔을경우 스페이스 하나로 처리하기 위함..
-                                os = os + "";
-                                isBeforeSpace = false;
-                            }
-                            else {
-                                os = os + unescape("%u" + (12288).toString(16));
-                                isBeforeSpace = true;
-                            }
-                        }
-                        else {
-                            os = os + unescape("%u" + (c + 65248).toString(16));
-                            isBeforeSpace = false;
-                        }
-                    }
-                    else {
-                        os = os + is.charAt(i);
-                        isBeforeSpace = false;
-                    }
-                }
-                //------------------------------------------------------------
-                return os;
-            }
-        },
-
-
-        validate: {
-            /**
-             * 주민번호 유효성 검사
-             */
-            checkSSN: function(jumin) {
-                var sum = 0;
-                var key = "234567892345";
-                //------------------------------------------------------------
-                if(jumin.length <= 12) {
-                    return true;
-                }
-                //------------------------------------------------------------
-                for(var i = 0; i < 12; i++) {
-                    sum += jumin.charAt(i) * key.charAt(i);
-                }
-                //------------------------------------------------------------
-                sum = 11 - (sum % 11);
-                var endNo = sum % 10;
-                //------------------------------------------------------------
-                return !(jumin.charAt(12) != endNo);
-            },
-            /**
-             * 만 나이제한 체크
-             */
-            checkRealAge: function(limitAge, jumin) {
-                var year = DateUtil.getYear();
-                var birth = 0;
-                //------------------------------------------------------------
-                if(jumin.length < 13) {
-                    return true;
-                }
-                //------------------------------------------------------------
-                if("3478".indexOf(jumin.substring(6, 7)) > -1) {
-                    birth = "20" + jumin.substring(0, 6);
-                }
-                else {
-                    birth = "19" + jumin.substring(0, 6);
-                }
-                //------------------------------------------------------------
-                var limitDate = eval(year - limitAge) + "" + DateUtil.getMonth() + "" + DateUtil.getDay();
-                //------------------------------------------------------------
-                return !(eval(birth - limitDate) > 0);
-            },
-            /**
-             * 이메일 형식 체크
-             */
-            validEmail: function(param) {
-                var str = (typeof param === "string") ? param : $(param).val();
-                //------------------------------------------------------------
-                if(str == "") {
-                    return true;
-                }
-                //------------------------------------------------------------
-                var check_email = str.search(/^\s*[\w\.\~\-]+\@[\w\~\-]+(\.[\w\~\-]+)+\s*$/g);
-                //------------------------------------------------------------
-                return (check_email == 0);
-            },
-            /**
-             * 도메인 형식 체크
-             */
-            validDomain: function(param) {
-                var str = (typeof param === "string") ? param : $(param).val();
-                //------------------------------------------------------------
-                if(str == "") {
-                    return true;
-                }
-                //------------------------------------------------------------
-                var check_domain = str.search(/^\s*[\w\~\-]+(\.[\w\~\-]+)+\s*$/g);
-                //------------------------------------------------------------
-                return (check_domain == 0);
-            },
-            /**
-             * 전화번호 형식 체크
-             */
-            validPhone: function(rootId, phone1, phone2, phone3) {
-                var phone = $(rootId).find("#" + phone1).val() + "" + $(rootId).find("#" + phone2).val() + "" + $(rootId).find("#" + phone3).val();
-                //------------------------------------------------------------
-                if(phone.length < 1) {
-                    return true;
-                }
-                //------------------------------------------------------------
-                var check_phone = phone.search(/^(0[2-8][0-5]?|01[01346-9])-?([1-9]{1}[0-9]{2,3})-?([0-9]{4})|((080-?[0-9]{3,4}|15(44|66|77|88))-?[0-9]{4})$/);
-                //------------------------------------------------------------
-                return (check_phone == 0);
-            },
-            /**
-             * 날자 형식 체크
-             *
-             */
-            validDate: function(date) {
-                var val = StringUtil.toNumber(date).toString();
-                //------------------------------------------------------------
-                if(val.length < 4) {
-                    return true;
-                }
-                //------------------------------------------------------------
-                var re = "";
-                //------------------------------------------------------------
-                if(val.length == 4) {
-                    re = /^([12][0-9]{3})$/g;
-                }
-                else if(val.length == 5) {
-                    re = /^([12][0-9]{3}[01])$/g;
-                }
-                else if(val.length == 6) {
-                    re = /^(([12][0-9]{3})(0[1-9]|1[0-2]))$/g;
-                }
-                else if(val.length == 7) {
-                    re = /^(([12][0-9]{3})(0[1-9]|1[0-2])([0123]))$/g;
-                }
-                else if(val.length == 8) {
-                    re = /^(([12][0-9]{3})(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01]))$/g;
-                }
-                else {
-                    return true;
-                }
-                //------------------------------------------------------------
-                return (val.search(re) == 0);
-            },
-
-            /**
-             * 시작 <-> 종료 일자 유효성 검사
-             */
-            fromToDate: function(obj, minDate, maxDate) {
-                var date = [];
-                date[0] = "";
-                date[1] = "";
-                //------------------------------------------------------------
-                var val = (typeof obj === "string") ? StringUtil.toNumber(obj) : StringUtil.toNumber($(obj).val());
-                //------------------------------------------------------------
-                if(val.toString().length < 8) {
-                    return date;
-                }
-                //------------------------------------------------------------
-                if(minDate) {
-                    var minDt = DateUtil.setDate(minDate); // 날자형 검증
-                    var sdt = $("[name=" + minDate + "]"); // 비교 필드 검증.
-                    //------------------------------------------------------------
-                    if(minDt == "" && $(sdt).size() > 0) {
-                        if(ValidUtil.validDate($(sdt).val())) {
-                            if(StringUtil.toNumber($(sdt).val()).toString().length >= 8) {
-                                minDt = StringUtil.toNumber($(sdt).val());
-                            }
-                        }
-                    }
-                    //------------------------------------------------------------
-                    if(minDt != "" && val < parseInt(minDt, 10)) {
-                        date[0] = StringUtil.toDate(minDt, "-");
-                        //------------------------------------------------------------
-                        if($(sdt).size() > 0) {
-                            date[0] = $(sdt).attr("title") + "[" + date[0] + "]";
-                        }
-                    }
-                }
-                //------------------------------------------------------------
-                if(maxDate) {
-                    var maxDt = DateUtil.setDate(maxDate);
-                    var edt = $("[name=" + maxDate + "]");
-                    //------------------------------------------------------------
-                    if(maxDt == "" && $(edt).size() > 0) {
-                        if(StringUtil.toNumber($(edt).val()).toString().length >= 8) {
-                            if(ValidUtil.validDate($(edt).val())) {
-                                maxDt = StringUtil.toNumber($(edt).val());
-                            }
-                        }
-                    }
-                    //------------------------------------------------------------
-                    if(maxDt != "" && val > parseInt(maxDt, 10)) {
-                        date[1] = StringUtil.toDate(maxDt, "-");
-                        //------------------------------------------------------------
-                        if ($(edt).size() > 0) {
-                            date[1] = $(edt).attr("title") + "[" + date[1] + "]";
-                        }
-                    }
-                }
-                //------------------------------------------------------------
-                return date;
-            }
-        },
-
-
-        jqgrid: {
-            show: function(elementId, colNames, colModel, options, callback) {
-                $("#" + elementId).jqGrid({
-                    colNames: colNames,
-                    colModel: colModel,
-                    autowidth:   (options && typeof(options.autowidth)   === "boolean") ? options.autowidth : true,
-                    height:      (options && typeof(options.height)      === "number")  ? options.height : 231,
-                    rowNum:      (options && typeof(options.rowNum)      === "number")  ? options.rowNum : PAGE_UNIT,
-                    gridview:    (options && typeof(options.gridview)    === "boolean") ? options.gridview : true,
-                    shrinkToFit: (options && typeof(options.shrinkToFit) === "boolean") ? options.shrinkToFit : false,
-                    multiselect: (options && typeof(options.multiselect) === "boolean") ? options.multiselect : true,
-                    rownumbers:  (options && typeof(options.rownumbers)  === "boolean") ? options.rownumbers : false,
-                    loadonce:    (options && typeof(options.loadonce)    === "boolean") ? options.loadonce : false,
-                    cellEdit:    (options && typeof(options.cellEdit)    === "boolean") ? options.cellEdit : true,
-                    caption: "",
-                    gridComplete: function() {
-                        if(callback) {
-                            callback();
-                        }
-                    },
-                    beforeSelectRow: function(rowId) {
-                        GridUtil.clearFocusRow(elementId, rowId);
-                        return true;
-                    }
-                });
-            },
-            setData: function(gridElementId, jsonData) {
-//           	 for(var i=0; i < jsonData.length; i++) {
-//                 //jsonListData[i].rownum = (i+1) + (((pagingInfo) ? pagingInfo.recordCountPerPage : 10) * (((pagingInfo) ? pagingInfo.currentPageNo : 1) - 1));
-//                 alert("jsonData["+i+"].RN] :"+jsonData[i].RN);
-//                 alert("jsonData["+i+"].ZIP] :"+jsonData[i].ZIP);
-//                 alert("jsonData["+i+"].ADRES] :"+jsonData[i].ADRES);
-//                 alert("jsonData["+i+"].rownum] :"+jsonData[i].rownum);
-//                 
-//                
-//        	 }
-
-                var $gridElement = $("#" + gridElementId);
-                //------------------------------------------------------------
-                // 이전 데이터 삭제
-                //------------------------------------------------------------
-                $gridElement.clearGridData();
-                //------------------------------------------------------------
-                this.setParam(gridElementId, {
-                    datatype: "local",
-                    data: jsonData
-                });
-                //------------------------------------------------------------
-                // 첫번째 row focus
-                //------------------------------------------------------------
-                if(jsonData && jsonData.length > 0) {
-                    this.setFocusRow(gridElementId, 1);
-                }
-            },
-            setParam: function(gridElementId, options) {
-                $("#" + gridElementId).jqGrid("setGridParam", options).trigger("reloadGrid");
-            },
-            getParam: function(gridElementId, paramKey) {
-                return $("#" + gridElementId).jqGrid("getGridParam", paramKey);
-            },
-            fire: function(gridElementId, eventName) {
-                var eventHandler = this.getParam(gridElementId, eventName);
-                //--------------------------------------------------------------------------------
-                var eventParam = "";
-                //--------------------------------------------------------------------------------
-                for(var i = 2; i < arguments.length; i++) {
-                    eventParam += arguments[i] + (((i+1) < arguments.length) ? "," : "");
-                }
-                //--------------------------------------------------------------------------------
-                eval('eventHandler.call($("#" + gridElementId)[0], ' + eventParam + ');');
-            },
-            setRowNum: function(gridElementId, rowNum) {
-                this.setParam(gridElementId, { rowNum: rowNum });
-            },
-            setRowNumColumn: function(jsonListData, pagingInfo) {
-                for(var i=0; i < jsonListData.length; i++) {
-                    jsonListData[i].rownum = (i+1) + (((pagingInfo) ? pagingInfo.recordCountPerPage : 10) * (((pagingInfo) ? pagingInfo.currentPageNo : 1) - 1));
-                }
-            },
-            setFocusRow: function(gridElementId, rowNum) {
-                var $gridElement = $("#" + gridElementId);
-                //--------------------------------------------------------------------------------
-                var className = "ui-state-hover";
-                //--------------------------------------------------------------------------------
-                $gridElement.jqGrid("setGridParam", {selrow: rowNum});
-                $gridElement.find("tbody").find("#" + rowNum).removeClass(className).addClass(className);
-            },
-            clearFocusRow: function(gridElementId, rowId) {
-                var $gridElement = $("#" + gridElementId);
-                //--------------------------------------------------------------------------------
-                var className = "ui-state-hover";
-                //--------------------------------------------------------------------------------
-                $gridElement.find("tbody").find("tr").not("#" + rowId).removeClass(className);
-            }
-        },
-        ppc: {
-            openSiren24Popup: function(callbackFuncName) {
-                if(checkPpc()) {
-                    //--------------------------------------------------------------------------------
-                    // callback function 값 설정
-                    //--------------------------------------------------------------------------------
-                    var $body = $("body");
-                    var $callback = $body.find("#_SIREN24_CALLBACK_FUNC_NAME");
-                    //--------------------------------------------------------------------------------
-                    if($callback.length > 0) {
-                        $callback.remove();
-                    }
-                    //--------------------------------------------------------------------------------
-                    $body.append('<input type="hidden" name="_SIREN24_CALLBACK_FUNC_NAME" id="_SIREN24_CALLBACK_FUNC_NAME" value="' + callbackFuncName + '" />');
-                    //--------------------------------------------------------------------------------
-                    if($body.find("#_SIREN24_OPEN_FORM").length > 0) {
-                        $body.find("#_SIREN24_OPEN_FORM").remove();
-                    }
-                    //--------------------------------------------------------------------------------
-                    $body.append('<form name="_SIREN24_OPEN_FORM" id="_SIREN24_OPEN_FORM"></form>');
-                    //--------------------------------------------------------------------------------
-                    // Siren24 인증 popup open
-                    //--------------------------------------------------------------------------------
-                    WindowUtil.openPopup(getForm("_SIREN24_OPEN_FORM"), CONTEXT_PATH + "/common/ppc/requestseed.jsp", "PCCV3Window", 430, 560);
-                }
-                else {
-                    Message.alert("휴대폰인증 을 사용할 수 없습니다.");
-                }
-            },
-            setData: function(form, ppcOptions) {
-                var $form = $(getForm(form));
-                //------------------------------------------------------------
-                var appendHtml = "";
-                //------------------------------------------------------------
-                appendHtml += '<input type="hidden" name="' + PPC_USE_YN_SESSION_NAME  + '" value="true" />';
-                appendHtml += '<input type="hidden" name="' + PPC_NAME_SESSION_NAME    + '" value="' + ppcOptions.name + '" />';
-                appendHtml += '<input type="hidden" name="' + PPC_SEX_SESSION_NAME     + '" value="' + ppcOptions.sex + '" />';
-                appendHtml += '<input type="hidden" name="' + PPC_FGN_GBN_SESSION_NAME + '" value="' + ppcOptions.fgnGbn + '" />';
-                appendHtml += '<input type="hidden" name="' + PPC_CELL_NO_SESSION_NAME + '" value="' + ppcOptions.cellNo + '" />';
-                appendHtml += '<input type="hidden" name="' + PPC_BIRYMD_SESSION_NAME  + '" value="' + ppcOptions.birYMD + '" />';
-                //------------------------------------------------------------
-                $form.append(appendHtml);
             }
         }
-    };
-}(jQuery);
+        //------------------------------------------------------------
+        // 인증서 설치 여부 확인
+        //------------------------------------------------------------
+//        if(checkPkiCert()) {
+//            PkiUtils.cert.printTag(false);
+//            //------------------------------------------------------------
+//            if(!PkiUtils.cert.isInstalled()) {
+//                Message.alert("인증서 모듈이 설치되어 있지 않습니다.<br />확인 버튼을 선택하시면 설치 페이지로 이동합니다.<br />* 현재 설치페이지가 구성되어 있지 않기 때문에 cab 파일 설치를 진행합니다.", function() {
+//                    PkiUtils.cert.printTag(true);
+//                });
+//            }
+//        }
+        //------------------------------------------------------------
+        // 보고서 설치 여부 확인
+        //------------------------------------------------------------
+        /*ReportUtils.printTag(false);*/
+        //------------------------------------------------------------
+        /*if(!ReportUtils.isInstalled()) {
+            Message.alert("보고서 모듈이 설치되어 있지 않습니다.<br />확인 버튼을 선택하시면 cab 파일 설치를 진행합니다.", function() {
+                ReportUtils.printTag(true);
+            });
+        }*/
+    });
+}
 
 
-/** WindowUtil */
-var WindowUtil = Utils.window;
-/** ElementUtil */
-var ElementUtil = Utils.element;
-/** DateUtil */
-var DateUtil = Utils.date;
-/** StringUtil */
-var StringUtil = Utils.string;
-/** ValidUtil */
-var ValidUtil = Utils.validate;
-/** GridUtil */
-var GridUtil = Utils.jqgrid;
-/** PpcUtil */
-var PpcUtil = Utils.ppc;
+/**
+ * 화면에서 onload 시에 수행되는 내용 작성.
+ * form 단위 onload 기능을 수행한다.
+ * (jQuery 의 $.ready 를 무분별하게 사용하면, init point 를 식별하기 어려운 문제가 있음)
+ *
+ * @param form
+ * @param callback
+ */
+function formReady(form, callback) {
+    $(document).ready(function() {
+        var formObj  = getForm(form);
+        var $formObj = $(formObj);
+        //------------------------------------------------------------
+        if(!formObj) {
+            if(!lazyForm) {
+                lazyForm = form;
+                lazyCallback = callback;
+            }
+            //------------------------------------------------------------
+            return;
+        }
+        //------------------------------------------------------------
+        lazyForm = null;
+        lazyCallback = null;
+        //------------------------------------------------------------
+        isSubmit = false;
+        //------------------------------------------------------------
+        // 폼 자동 서브밋 방지.
+        //------------------------------------------------------------
+        $formObj.bind("submit", function(event) {
+            return false;
+        });
+        //------------------------------------------------------------
+        // form 자동완성 off
+        //------------------------------------------------------------
+        $formObj.attr("autocomplete", "off");
+        //------------------------------------------------------------
+        // input field filter init
+        //------------------------------------------------------------
+        ExtValidation.initFilter(formObj);
+        //------------------------------------------------------------
+        // XXX 오류메시지 처리
+        //------------------------------------------------------------
+        var isError = false;
+        var $isErrorMessageObj = $("#" + IS_ERROR_ATTRIBUTE_NAME);
+        //------------------------------------------------------------
+        if($isErrorMessageObj.length > 0 && $isErrorMessageObj.val() === "true") {
+            isError = true;
+            //------------------------------------------------------------
+            var $errorMessageObj = $("#" + ERROR_MESSAGE_ATTRIBUTE_NAME);
+            //------------------------------------------------------------
+            Message.error($errorMessageObj.val(), function() {
+                $isErrorMessageObj.val("");  // 에러FLAG 초기화
+                $errorMessageObj.val("");    // 에러메시지 초기화
+            });
+        }
+        //------------------------------------------------------------
+        // 메시지 처리
+        //------------------------------------------------------------
+        var $messageObj = $("#" + MESSAGE_ATTRIBUTE_NAME);
+        //------------------------------------------------------------
+        if(!isError && $messageObj.length > 0 && $messageObj.val() != "") {
+            Message.alert($messageObj.val(), function() {
+                $messageObj.val("");  // 메시지 초기화
+                //------------------------------------------------------------
+                if(callback) {
+                    callback(formObj);
+                }
+            });
+        }
+        else {
+            if(callback) {
+                callback(formObj);
+            }
+        }
+    });
+}
 
 
+/**
+ * form DOM object 를 반환한다.
+ *
+ * @param form fromName or formId
+ * @returns form object
+ */
+function getForm(form) {
+    var formObj = null;
+    //------------------------------------------------------------
+    if(typeof(form) == "object") {
+        formObj = form;
+    }
+    else {
+        var $formByName = $("form[name=" + form + "]");
+        var $formById = $("form").find("#" + form);
+        //------------------------------------------------------------
+        if($formByName.length > 0) {
+            formObj = $formByName[0];
+        }
+        else if($formById.length > 0) {
+            formObj = $formById[0];
+        }
+    }
+    //------------------------------------------------------------
+    return formObj;
+}
+
+
+/**
+ * 현재 새션의 Active 상태를 반환한다.
+ */
+function checkSession() {
+    var result = false;
+    //------------------------------------------------------------
+    $.ajax({
+        type: "post",
+        cache: false,
+        url: CONTEXT_PATH + "/common/check/session_check.jsp",
+        async: false,
+        dataType: "json",
+        data: {},
+        complete: function(data, status) {
+            var resultJson = JSON.parse(data.responseText);
+            result = resultJson.result;
+        }
+    });
+    //------------------------------------------------------------
+    return result;
+}
+
+
+/**
+ * 현재 PKI의 Active 상태를 반환한다.
+ */
+function checkPki() {
+    var result = false;
+    //------------------------------------------------------------
+    $.ajax({
+        type: "post",
+        cache: false,
+        url: CONTEXT_PATH + "/common/check/pki_check.jsp",
+        async: false,
+        dataType: "json",
+        data: {},
+        complete: function(data, status) {
+            var resultJson = JSON.parse(data.responseText);
+            result = resultJson.result;
+        }
+    });
+    //------------------------------------------------------------
+    return result;
+}
+
+
+/**
+ * 현재 인증서의 Active 상태를 반환한다.
+ */
+function checkPkiCert() {
+    var result = false;
+    //------------------------------------------------------------
+    $.ajax({
+        type: "post",
+        cache: false,
+        url: CONTEXT_PATH + "/common/check/pki_cert_check.jsp",
+        async: false,
+        dataType: "json",
+        data: {},
+        complete: function(data, status) {
+            var resultJson = JSON.parse(data.responseText);
+            result = resultJson.result;
+        }
+    });
+    //------------------------------------------------------------
+    return result;
+}
+
+
+/**
+ * 현재 휴대폰실명인증 의 Active 상태를 반환한다.
+ */
+function checkPpc() {
+    var result = false;
+    //------------------------------------------------------------
+    $.ajax({
+        type: "post",
+        cache: false,
+        url: CONTEXT_PATH + "/common/check/ppc_check.jsp",
+        async: false,
+        dataType: "json",
+        data: {},
+        complete: function(data, status) {
+            var resultJson = JSON.parse(data.responseText);
+            result = resultJson.result;
+        }
+    });
+    //------------------------------------------------------------
+    return result;
+}
+
+
+/**
+ * Ajax Submit 을 수행한다.
+ *
+ * @param uri URI
+ * @param param JSON 파라미터
+ * @param callback callback function
+ * @param isBizSkip [option] service skip 여부
+ * @param isSkipSessionCheck [option] Session Check Skip 여부
+ */
+function ajaxSubmit(uri, param, callback, isBizSkip, isSkipSessionCheck) {
+    if(!param) {
+        param = {};
+    }
+    //------------------------------------------------------------
+    // 중복 submit 방지
+    //------------------------------------------------------------
+    if(isSubmit) {
+        return;
+    }
+    //------------------------------------------------------------
+    // 중복 click 방지
+    //------------------------------------------------------------
+    if(currentFocusElement) {
+        $(currentFocusElement).blur();
+    }
+    //------------------------------------------------------------
+    // 화면 block
+    //------------------------------------------------------------
+    loadingBlock(true);
+    //------------------------------------------------------------
+    // 현재 세션 유효성 체크
+    //------------------------------------------------------------
+    var sessionState = (isSkipSessionCheck) ? true : checkSession();
+    //------------------------------------------------------------
+    if(sessionState) {
+        param.isProcess = (isBizSkip) ? "false" : "true";
+        //------------------------------------------------------------
+        isSubmit = true;
+        //------------------------------------------------------------
+        // 구간암호화
+        //------------------------------------------------------------
+        if(checkPki()) {
+            PkiUtils.setEncryptDataWithAjax(param, PkiUtils.getEncryptDataWithAjax(param));
+        }
+        //------------------------------------------------------------
+        // Call Ajax
+        //------------------------------------------------------------
+        $.ajax({
+            type: "POST",
+            cache: false,
+            url: uri,
+            dataType: "json",
+            data: param,
+            success: function(data, status) {
+            },
+            error: function(req, status, error) {
+                Message.alert("오류가 발생하였습니다.\n\n[status] " + status + "\n[error] " + error);
+            },
+            complete: function(data, status) {
+                //------------------------------------------------------------
+                // 현재 포커스 객체 저장
+                //------------------------------------------------------------
+                try {
+                    $("a, :input").bind("click focus", function(event) {
+                        currentFocusElement = $(this);
+                    });
+                }
+                catch(e) {}
+                //------------------------------------------------------------
+                // 중복 서밋 방지 해제.
+                //------------------------------------------------------------
+                isSubmit = false;
+                //------------------------------------------------------------
+                // 페이지 블럭 해제.
+                //------------------------------------------------------------
+                loadingBlock(false);
+                //------------------------------------------------------------
+                data.responseText = StringUtil.replaceAll(data.responseText, "&#40;", "(");
+                data.responseText = StringUtil.replaceAll(data.responseText, "&#41;", ")");
+                //------------------------------------------------------------
+                var resultJson = JSON.parse(data.responseText);
+                //var resultJson = data.responseJSON;
+                //------------------------------------------------------------
+                if(status === "success") {
+                    resultJson.isError = false;
+                    resultJson.errorMsg = "";
+                    //------------------------------------------------------------
+                    // XXX 오류메시지 처리
+                    //------------------------------------------------------------
+                    var isError = resultJson[IS_ERROR_ATTRIBUTE_NAME];
+                    //------------------------------------------------------------
+                    if(isError === true || isError === "true") {
+                        isError = true;
+                        //------------------------------------------------------------
+                        var errorMessage = resultJson[ERROR_MESSAGE_ATTRIBUTE_NAME];
+                        //------------------------------------------------------------
+                        Message.error(errorMessage);
+                        //------------------------------------------------------------
+                        resultJson.isError = true;
+                        resultJson.errorMsg = errorMessage;
+                    }
+                    //------------------------------------------------------------
+                    // 메시지 처리
+                    //------------------------------------------------------------
+                    var resultMessage = resultJson[MESSAGE_ATTRIBUTE_NAME];
+                    //------------------------------------------------------------
+                    if(!isError && resultMessage && resultMessage !== "") {
+                        Message.alert(resultMessage);
+                    }
+                }
+                else {
+                    resultJson = {};
+                    resultJson.isError = true;
+                    resultJson.errorMsg = status;
+                }
+                //------------------------------------------------------------
+                // callback function 호출
+                //------------------------------------------------------------
+                AJAX_PAGING_CALLBACK = null;
+                //------------------------------------------------------------
+                if(callback) {
+                    callback(resultJson);
+                }
+            }
+        });
+    }
+    else {
+        Message.alert("세션이 만료되었습니다.\n[확인] 버튼을 누르시면 메인 페이지로 이동합니다.", function() {
+            if(window.dialogArguments) {
+                WindowUtil.closeModalPopup(null);
+            }
+            else {
+                goMain();
+            }
+        });
+    }
+}
+
+
+
+/**
+ * submit 을 수행한다.
+ *
+ * @param form formName or formID
+ * @param isBizSkip [option] service skip 여부
+ * @param _target [option] target frameName
+ * @param certOptions [option] 인증서관련옵션
+ * @param ppcOptions [option] 휴대폰관련옵션
+ */
+function formSubmit(form, isBizSkip, _target, certOptions, ppcOptions) {
+    var formObj = getForm(form);
+    //------------------------------------------------------------
+    // Validation Check
+    //------------------------------------------------------------
+    if(!ExtValidation.validate(formObj)) {
+        return;
+    }
+    //------------------------------------------------------------
+    // 인증서 Check
+    //------------------------------------------------------------
+    if(certOptions && certOptions["isCert"] === true) {
+        PkiUtils.cert.setCertVidData(formObj, certOptions["certVid"], certOptions["certType"]);
+        //------------------------------------------------------------
+        if(checkPkiCert()) {
+            if(!PkiUtils.cert.setCertData(formObj, certOptions["certVid"], certOptions["certType"])) {
+                return;
+            }
+        }
+    }
+    //------------------------------------------------------------
+    // 휴대폰인증 check
+    //------------------------------------------------------------
+    if(ppcOptions && ppcOptions["isPpc"] === true) {
+        PpcUtil.setData(formObj, ppcOptions);
+    }
+    //------------------------------------------------------------
+    // 중복 submit 방지
+    //------------------------------------------------------------
+    if(isSubmit) {
+        return;
+    }
+    //------------------------------------------------------------
+    // 중복 click 방지
+    //------------------------------------------------------------
+    if(currentFocusElement) {
+        $(currentFocusElement).blur();
+    }
+    //------------------------------------------------------------
+    // 화면 block
+    //------------------------------------------------------------
+    loadingBlock(true);
+    //------------------------------------------------------------
+    var $formObj = $(formObj);
+    //------------------------------------------------------------
+    $formObj.find("input[name=isProcess]").remove();
+    $formObj.append('<input type="hidden" name="isProcess" value="' + ((isBizSkip) ? "false" : "true") + '" />');
+    //------------------------------------------------------------
+    $formObj.attr("method", "post");
+    //------------------------------------------------------------
+    if (_target != null && _target != "") {
+        $formObj.attr("target", _target);
+    }
+    //------------------------------------------------------------
+    isSubmit = true;
+    //------------------------------------------------------------
+    // 구간암호화
+    //------------------------------------------------------------
+    if(checkPki()) {
+        PkiUtils.setEncryptData(formObj, PkiUtils.getEncryptData(formObj));
+    }
+    //------------------------------------------------------------
+    
+    if(formObj != null) 
+        formObj.submit();
+    else
+        $formObj.submit();
+}
+
+
+
+/**
+ * uploadSubmit 을 수행한다.
+ */
+function uploadSubmit(form, isBizSkip, _target, isSkipSessionCheck) {
+    //------------------------------------------------------------
+    // 현재 세션 유효성 체크
+    //------------------------------------------------------------
+    var sessionState = (isSkipSessionCheck) ? true : checkSession();
+    //------------------------------------------------------------
+    if(sessionState) {
+        var $form = $(getForm(form));
+        //--------------------------------------------------------------------------------
+        var orgEncType = $form.attr("enctype");
+        $form.attr("enctype", "multipart/form-data");
+        //--------------------------------------------------------------------------------
+        formSubmit(form, isBizSkip, _target);
+        //--------------------------------------------------------------------------------
+        $form.attr("enctype", orgEncType);
+    }
+    else {
+        Message.alert("세션이 만료되었습니다.\n[확인] 버튼을 누르시면 메인 페이지로 이동합니다.", function() {
+            if(window.dialogArguments) {
+                WindowUtil.closeModalPopup(null);
+            }
+            else {
+                goMain();
+            }
+        });
+    }
+}
+
+
+/**
+ * 메뉴를 이동한다.
+ *
+ * @param menuId 메뉴ID
+ * @param isUri [option] uri여부
+ */
+function goMenu(menuId, isUri) {
+    var $menuForm = $(getForm("_menuForm"));
+    //------------------------------------------------------------
+    if(isUri) {
+        $menuForm.attr("action", CONTEXT_PATH + menuId);
+    }
+    else {
+        $menuForm.attr("action", CONTEXT_PATH + "/menu.do");
+        $menuForm.find("input[name=menuId]").val(menuId);
+    }
+    //------------------------------------------------------------
+    formSubmit($menuForm[0], true);
+}
+
+
+/**
+ * 상세화면에서 목록 화면으로 이동한다.
+ *
+ * @param param 파라미터
+ */
+function goList(param) {
+    var $menuForm = $(getForm("_menuForm"));
+    //------------------------------------------------------------
+    $menuForm.attr("action", CONTEXT_PATH + "/list.do");
+    //------------------------------------------------------------
+    if(param) {
+        for(var i in param) {
+            $menuForm.append('<input type="hidden" name="' + i + '" value="' + param[i] + '" />');
+        }
+    }
+    //------------------------------------------------------------
+    formSubmit($menuForm[0], true);
+}
+
+
+/**
+ * 로그인을 수행한다.
+ */
+function login() {
+    var $loginForm = $(getForm("_loginForm"));
+    $loginForm.attr("action", CONTEXT_PATH + "/j_spring_security_check");
+    formSubmit($loginForm[0]);
+}
+
+
+/**
+ * 로그아웃을 수행한다.
+ */
+function logout() {
+    var $loginForm = $(getForm("_loginForm"));
+    $loginForm.attr("action", CONTEXT_PATH + "/logout.do");
+    formSubmit($loginForm[0]);
+}
+
+
+/**
+ * (포탈)로그인을 수행한다.
+ */
+function portalLogin(form, mberTy, certOptions, ppcOptions) {
+    var $loginForm = $(getForm(form));
+    var uriType = "makr";
+    //--------------------------------------------------------------------------------
+    if(mberTy === "P30") {
+        uriType = "agency";
+    }
+    else if(mberTy === "P40") {
+        uriType = "purchsr";
+    }
+    //--------------------------------------------------------------------------------
+    $loginForm.attr("action", CONTEXT_PATH + "/" + uriType + "/j_spring_security_check");
+    //--------------------------------------------------------------------------------
+    formSubmit($loginForm[0], null, null, certOptions, ppcOptions);
+}
+
+
+/**
+ * (포탈)로그아웃을 수행한다.
+ */
+function portalLogout() {
+    var $loginForm = $(getForm("_loginForm"));
+    //--------------------------------------------------------------------------------
+    $loginForm.attr("action", CONTEXT_PATH + "/logout.do");
+    //--------------------------------------------------------------------------------
+    formSubmit($loginForm[0]);
+}
+
+
+/**
+ * 메인화면으로 이동한다.
+ */
+function goMain() {
+    var $menuForm = $(getForm("_menuForm"));
+    //------------------------------------------------------------
+    $menuForm.attr("action", CONTEXT_PATH + "/");
+    //------------------------------------------------------------
+    formSubmit($menuForm[0], true);
+}
+
+
+/**
+ * (포탈)회원가입 화면으로 이동한다.
+ */
+function portalSignIn() {
+    var $loginForm = $(getForm("_menuForm"));
+    //--------------------------------------------------------------------------------
+    $loginForm.attr("action", CONTEXT_PATH + "/P070001001SF01.do");
+    //--------------------------------------------------------------------------------
+    formSubmit($loginForm[0]);
+}
+
+
+/**
+ * (포탈)마이페이지 화면으로 이동한다.
+ */
+function portalGoMyPage(mberTy) {
+    var resultUri = "";
+    //--------------------------------------------------------------------------------
+    switch(mberTy) {
+        case "P40":
+            resultUri = "/purchsr/P070002000SF01.do";
+            break;
+    }
+    //--------------------------------------------------------------------------------
+    if(resultUri !== "") {
+        goMenu(resultUri, true);
+    }
+}
+
+
+/**
+ * 로딩 Block
+ * (submit 등등..)
+ * @param isBlock
+ */
+function loadingBlock(isBlock) {
+    if(isBlock) {
+        if (!lodingExtBlock && isShowBlocking) {
+            lodingExtBlock = new ext.Block();
+            lodingExtBlock.show(isShowLoadingImg ? LOADING_WRAP_LAYER : null, {
+                show: true,
+                focus: false,
+                addTop : -50
+            }, null);
+        }
+    }
+    else {
+        if (lodingExtBlock && !isRetainBlocking) {
+            lodingExtBlock.beforeFocus = false; // 이전 포커스 금지.
+            lodingExtBlock.hide();
+            lodingExtBlock = null;
+        }
+        //------------------------------------------------------------
+        isShowBlocking = true;
+        isShowLoadingImg = true;
+    }
+}
+
+
+/**
+ * paging 이동 기능을 수행한다.
+ * (paging tag 에서 내부적으로 사용된다)
+ *
+ * @param formName formName or formID
+ * @param pageIndex Page Index
+ */
+function _paging(formName, pageIndex) {
+    var $formObj   = $(getForm(formName));
+    var $pageIndex = $formObj.find("input[name=pageIndex]");
+    //------------------------------------------------------------
+    if($pageIndex.length > 0) {
+        $pageIndex.val(pageIndex);
+    }
+    else {
+        $formObj.append('<input type="hidden" name="pageIndex" value="' + pageIndex + '" />');
+    }
+    //------------------------------------------------------------
+    formSubmit(formName);
+}
+
+
+/**
+ * Ajax 용 paging 이동 기능을 수행한다.
+ * (Ajax paging 에서 내부적으로 사용된다)
+ *
+ * @param pageNo 페이지번호
+ * @param url    URl
+ * @param param  Parameter
+ * @param isSkipSessionCheck  세션체크skip여부
+ */
+function _pagingAjax(pageNo, url, param, isSkipSessionCheck) {
+    param = JSON.parse(unescape(param));
+    param.pageIndex = pageNo;
+    ajaxSubmit(url, param, AJAX_PAGING_CALLBACK, null, isSkipSessionCheck);
+}
+
+
+/**
+ * Ajax 용 paging 을 표시한다.
+ *
+ * @param elementId  paging 이 표현될 ElementId
+ * @param pagingInfo PagingInfo
+ * @param url        URL
+ * @param param      Parameter[json]
+ * @param callback
+ * @param isSkipSessionCheck 세션체크skip여부
+ */
+function showAjaxPaging(elementId, pagingInfo, url, param, callback, isSkipSessionCheck) {
+    param = escape((!param || param == null) ? "{}" : JSON.stringify(param));
+    //------------------------------------------------------------
+    AJAX_PAGING_CALLBACK = callback;
+    isSkipSessionCheck = (isSkipSessionCheck) ? true : false;
+    //------------------------------------------------------------
+    var pagingHtml = "";
+    //------------------------------------------------------------
+    if(pagingInfo.totalPageCount > pagingInfo.pageSize) {
+        if(pagingInfo.firstPageNoOnPageList > pagingInfo.pageSize) {
+            pagingHtml += '<a href="javascript:' + AJAX_PAGING_SUBMIT_FUNC_NAME + '(' + pagingInfo.firstPageNo + ', \'' + url + '\', \'' + param + '\', ' + isSkipSessionCheck + ');" class="prev_first"><img src="' + CONTEXT_PATH + '/docs/img/prev_first.png" height="25" width="25" alt="처음 페이지" /></a>';
+            pagingHtml += '<a href="javascript:' + AJAX_PAGING_SUBMIT_FUNC_NAME + '(' + (pagingInfo.firstPageNoOnPageList - 1) + ', \'' + url + '\', \'' + param + '\', ' + isSkipSessionCheck + ');" class="prev"><img src="' + CONTEXT_PATH + '/docs/img/prev.png" height="25" width="25" alt="이전 페이지" /></a>';
+        }
+        else {
+            pagingHtml += '<a href="javascript:' + AJAX_PAGING_SUBMIT_FUNC_NAME + '(' + pagingInfo.firstPageNo + ', \'' + url + '\', \'' + param + '\', ' + isSkipSessionCheck + ');" class="prev_first"><img src="' + CONTEXT_PATH + '/docs/img/prev_first.png" height="25" width="25" alt="처음 페이지" /></a>';
+            pagingHtml += '<a href="javascript:' + AJAX_PAGING_SUBMIT_FUNC_NAME + '(' + pagingInfo.firstPageNo + ', \'' + url + '\', \'' + param + '\', ' + isSkipSessionCheck + ');" class="prev"><img src="' + CONTEXT_PATH + '/docs/img/prev.png" height="25" width="25" alt="이전 페이지" /></a>';
+        }
+    }
+    //------------------------------------------------------------
+    for(var i=pagingInfo.firstPageNoOnPageList; i <= pagingInfo.lastPageNoOnPageList; i++) {
+        if(i == pagingInfo.currentPageNo) {
+            pagingHtml += '<a href="#" class="on">' + i + '</a>';
+        }
+        else {
+            pagingHtml += '<a href="javascript:' + AJAX_PAGING_SUBMIT_FUNC_NAME + '(' + i + ', \'' + url + '\', \'' + param + '\', ' + isSkipSessionCheck + ');">' + i + '</a>';
+        }
+    }
+    //------------------------------------------------------------
+    if(pagingInfo.totalPageCount > pagingInfo.pageSize) {
+        if(pagingInfo.lastPageNoOnPageList < pagingInfo.totalPageCount) {
+            pagingHtml += '<a href="javascript:' + AJAX_PAGING_SUBMIT_FUNC_NAME + '(' + (pagingInfo.firstPageNoOnPageList + pagingInfo.pageSize) + ', \'' + url + '\', \'' + param + '\', ' + isSkipSessionCheck + ');" class="next"><img src="' + CONTEXT_PATH + '/docs/img/next.png" height="25" width="25" alt="다음 페이지" /></a>';
+            pagingHtml += '<a href="javascript:' + AJAX_PAGING_SUBMIT_FUNC_NAME + '(' + pagingInfo.lastPageNo + ', \'' + url + '\', \'' + param + '\', ' + isSkipSessionCheck + ');" class="next_last"><img src="' + CONTEXT_PATH + '/docs/img/next_last.png" height="25" width="25" alt="마지막 페이지" /></a>';
+        }
+        else {
+            pagingHtml += '<a href="javascript:' + AJAX_PAGING_SUBMIT_FUNC_NAME + '(' + pagingInfo.lastPageNo + ', \'' + url + '\', \'' + param + '\', ' + isSkipSessionCheck + ');" class="next"><img src="' + CONTEXT_PATH + '/docs/img/next.png" height="25" width="25" alt="다음 페이지" /></a>';
+            pagingHtml += '<a href="javascript:' + AJAX_PAGING_SUBMIT_FUNC_NAME + '(' + pagingInfo.lastPageNo + ', \'' + url + '\', \'' + param + '\', ' + isSkipSessionCheck + ');" class="next_last"><img src="' + CONTEXT_PATH + '/docs/img/next_last.png" height="25" width="25" alt="마지막 페이지" /></a>';
+        }
+    }
+    //------------------------------------------------------------
+    var $parentElement = $("#" + elementId).parent();
+    //------------------------------------------------------------
+    $parentElement.find("#" + elementId).remove();
+    $parentElement.append('<div id="' + elementId + '"></div>');
+    $parentElement.find("#" + elementId).addClass("paginate").append(pagingHtml);
+}
+
+
+/**
+ * 파일 다운로드를 수행한다.
+ *
+ * @param fileId    파일ID
+ * @param atchbrdNo 게시물번호
+ * @param isSkipSessionCheck 세션체크skip여부
+ */
+function fileDownload(fileId, atchbrdNo, isSkipSessionCheck) {
+    //------------------------------------------------------------
+    // 현재 세션 유효성 체크
+    //------------------------------------------------------------
+    var sessionState = (isSkipSessionCheck) ? true : checkSession();
+    //------------------------------------------------------------
+    if(sessionState) {
+        var $iframeObj = $("#downloadFrame");
+        if($iframeObj.length < 1) {
+            $("body").append('<iframe name="downloadFrame" id="downloadFrame" width="0" height="0" style="display:none;"></iframe>');
+        }
+        //------------------------------------------------------------
+        var formObj = getForm("downLoadForm");
+        //------------------------------------------------------------
+        if(!formObj) {
+            // 히든폼 추가
+            $("body").append('<form name="downLoadForm" id="downloadForm"></form>');
+            formObj = getForm("downLoadForm");
+        }
+        //------------------------------------------------------------
+        var $form = $(formObj);
+        //------------------------------------------------------------
+        $form.remove("input");
+        //------------------------------------------------------------
+        $form.append('<input type="hidden" name="fileId" value="' + fileId + '" />');
+        $form.append('<input type="hidden" name="atchbrdNo" value="' + atchbrdNo + '" />');
+        //------------------------------------------------------------
+        $form.attr("action", CONTEXT_PATH + "/download.do");
+        $form.attr("method", "post");
+        $form.attr("target", "downloadFrame");
+        //------------------------------------------------------------
+        // 구간암호화
+        //------------------------------------------------------------
+        if(checkPki()) {
+            PkiUtils.setEncryptData(formObj, PkiUtils.getEncryptData(formObj));
+        }
+        //------------------------------------------------------------
+        formObj.submit();
+        //------------------------------------------------------------
+        $form.remove();
+        //------------------------------------------------------------
+        return false;
+    }
+    else {
+        Message.alert("세션이 만료되었습니다.\n[확인] 버튼을 누르시면 메인 페이지로 이동합니다.", function() {
+            if(window.dialogArguments) {
+                WindowUtil.closeModalPopup(null);
+            }
+            else {
+                goMain();
+            }
+        });
+    }
+}
+
+
+/**
+ * (양식)파일 다운로드를 수행한다.
+ *
+ * @param dtlCd 상세코드
+ * @param isSkipSessionCheck 세션체크skip여부
+ */
+function docFileDownload(dtlCd, isSkipSessionCheck) {
+    //------------------------------------------------------------
+    // 현재 세션 유효성 체크
+    //------------------------------------------------------------
+    var sessionState = (isSkipSessionCheck) ? true : checkSession();
+    //------------------------------------------------------------
+    if(sessionState) {
+        var $iframeObj = $("#downloadFrame");
+        if($iframeObj.length < 1) {
+            $("body").append('<iframe name="downloadFrame" id="downloadFrame" width="0" height="0" style="display:none;"></iframe>');
+        }
+        //------------------------------------------------------------
+        var formObj = getForm("downLoadForm");
+        //------------------------------------------------------------
+        if(!formObj) {
+            // 히든폼 추가
+            $("body").append('<form name="downLoadForm" id="downloadForm"></form>');
+            formObj = getForm("downLoadForm");
+        }
+        //------------------------------------------------------------
+        var $form = $(formObj);
+        //------------------------------------------------------------
+        $form.remove("input");
+        //------------------------------------------------------------
+        $form.append('<input type="hidden" name="dtlCd" value="' + dtlCd + '" />');
+        //------------------------------------------------------------
+        $form.attr("action", CONTEXT_PATH + "/docDownload.do");
+        $form.attr("method", "post");
+        $form.attr("target", "downloadFrame");
+        //------------------------------------------------------------
+        // 구간암호화
+        //------------------------------------------------------------
+        if(checkPki()) {
+            PkiUtils.setEncryptData(formObj, PkiUtils.getEncryptData(formObj));
+        }
+        //------------------------------------------------------------
+        formObj.submit();
+        //------------------------------------------------------------
+        $form.remove();
+        //------------------------------------------------------------
+        return false;
+    }
+    else {
+        Message.alert("세션이 만료되었습니다.\n[확인] 버튼을 누르시면 메인 페이지로 이동합니다.", function() {
+            if(window.dialogArguments) {
+                WindowUtil.closeModalPopup(null);
+            }
+            else {
+                goMain();
+            }
+        });
+    }
+}
+
+
+/**
+ * Grid 의 데이터를 excel 로 export 한다.
+ */
+function exportExcel(elementId, excludeList) {
+    if(checkSession()) {
+        var $gridMenuList = $("#" + elementId);
+        //--------------------------------------------------------------------------------
+        var colNames = GridUtil.getParam(elementId, "colNames");
+        var colModel = GridUtil.getParam(elementId, "colModel");
+        var headers  = [];
+        var columns  = [];
+        //--------------------------------------------------------------------------------
+        for(var i=0; i < colNames.length; i++) {
+            if(colNames[i].indexOf("<") !== 0) {
+                if(excludeList && excludeList.length > 0 && ($.inArray(colModel[i].name, excludeList) > -1)) {
+                    continue;
+                }
+                //--------------------------------------------------------------------------------
+                headers.push(colNames[i]);
+                columns.push(colModel[i].name);
+            }
+        }
+        //--------------------------------------------------------------------------------
+        var jsonData = {};
+        //--------------------------------------------------------------------------------
+        jsonData.listName = "gridList";
+        //--------------------------------------------------------------------------------
+        jsonData.headers = headers;
+        jsonData.columns = columns;
+        //--------------------------------------------------------------------------------
+        jsonData[jsonData.listName] = [];
+        var gridRowData = $gridMenuList.jqGrid("getRowData");
+        //--------------------------------------------------------------------------------
+        for(var i=0; i < gridRowData.length; i++) {
+            jsonData[jsonData.listName][i] = {};
+            //--------------------------------------------------------------------------------
+            for(var j=0; j < jsonData.columns.length; j++) {
+                jsonData[jsonData.listName][i][jsonData.columns[j]] = gridRowData[i][jsonData.columns[j]];
+            }
+        }
+        //--------------------------------------------------------------------------------
+        if(jsonData[jsonData.listName].length > 0) {
+            var $iframeObj = $("#downloadFrame");
+            if($iframeObj.length < 1) {
+                $("body").append('<iframe name="downloadFrame" id="downloadFrame" width="0" height="0" style="display:none;"></iframe>');
+            }
+            //------------------------------------------------------------
+            var formObj = getForm("excelDownLoadForm");
+            //------------------------------------------------------------
+            if(!formObj) {
+                $("body").append('<form name="excelDownLoadForm" id="excelDownLoadForm"></form>');
+                formObj = getForm("excelDownLoadForm");
+            }
+            //------------------------------------------------------------
+            var $form = $(formObj);
+            //------------------------------------------------------------
+            $form.remove("input");
+            //------------------------------------------------------------
+            var appendHtml = "";
+            //------------------------------------------------------------
+            appendHtml += '<input type="hidden" name="listName"                  value=\'' + jsonData.listName                           + '\' />';
+            appendHtml += '<input type="hidden" name="' + jsonData.listName + '" value=\'' + JSON.stringify(jsonData[jsonData.listName]) + '\' />';
+            appendHtml += '<input type="hidden" name="headers"                   value=\'' + JSON.stringify(jsonData.headers)            + '\' />';
+            appendHtml += '<input type="hidden" name="columns"                   value=\'' + JSON.stringify(jsonData.columns)            + '\' />';
+            //------------------------------------------------------------
+            $form.append(appendHtml);
+            //------------------------------------------------------------
+            $form.attr("action", CONTEXT_PATH + "/exportGridExcel.do");
+            $form.attr("method", "post");
+            $form.attr("target", "downloadFrame");
+            //------------------------------------------------------------
+            // 구간암호화
+            //------------------------------------------------------------
+            if(checkPki()) {
+                PkiUtils.setEncryptData(formObj, PkiUtils.getEncryptData(formObj));
+            }
+            //------------------------------------------------------------
+            formObj.submit();
+            //------------------------------------------------------------
+            $form.remove();
+        }
+        else {
+            Message.alert("export 대상 데이터가 없습니다.");
+        }
+    }
+    else {
+        Message.alert("세션이 만료되었습니다.\n[확인] 버튼을 누르시면 메인 페이지로 이동합니다.", function() {
+            if(window.dialogArguments) {
+                WindowUtil.closeModalPopup(null);
+            }
+            else {
+                goMain();
+            }
+        });
+    }
+}
+
+
+/**
+ * 테이블의 데이터를 excel 로 export 한다.
+ */
+function exportTblExcel(tblId) {
+    if(checkSession()) {
+        var $tblObj = $("#" + tblId);
+        //--------------------------------------------------------------------------------
+        var headers  = [];
+        var columns  = [];
+        //--------------------------------------------------------------------------------
+        $tblObj.find("thead").find("th").each(function(idx) {
+            var thText = $(this).text().trim();
+            if(thText !== "") {
+                headers.push(thText);
+                columns.push(idx);
+            }
+        });
+        //--------------------------------------------------------------------------------
+        var jsonData = {};
+        //--------------------------------------------------------------------------------
+        jsonData.listName = "tblList";
+        //--------------------------------------------------------------------------------
+        jsonData.headers = headers;
+        jsonData.columns = columns;
+        //--------------------------------------------------------------------------------
+        jsonData[jsonData.listName] = [];
+        //--------------------------------------------------------------------------------
+        $tblObj.find("tbody").find("tr").each(function(idx) {
+            jsonData[jsonData.listName][idx] = {};
+            //--------------------------------------------------------------------------------
+            for(var j=0; j < jsonData.columns.length; j++) {
+                jsonData[jsonData.listName][idx][jsonData.columns[j]] = $(this).find("td").eq(jsonData.columns[j]).text().trim();
+            }
+        });
+        //--------------------------------------------------------------------------------
+        if(jsonData[jsonData.listName].length > 0) {
+            var $iframeObj = $("#downloadFrame");
+            if($iframeObj.length < 1) {
+                $("body").append('<iframe name="downloadFrame" id="downloadFrame" width="0" height="0" style="display:none;"></iframe>');
+            }
+            //------------------------------------------------------------
+            var formObj = getForm("excelDownLoadForm");
+            //------------------------------------------------------------
+            if(!formObj) {
+                $("body").append('<form name="excelDownLoadForm" id="excelDownLoadForm"></form>');
+                formObj = getForm("excelDownLoadForm");
+            }
+            //------------------------------------------------------------
+            var $form = $(formObj);
+            //------------------------------------------------------------
+            $form.remove("input");
+            //------------------------------------------------------------
+            var appendHtml = "";
+            //------------------------------------------------------------
+            appendHtml += '<input type="hidden" name="listName"                  value=\'' + jsonData.listName                           + '\' />';
+            appendHtml += '<input type="hidden" name="' + jsonData.listName + '" value=\'' + JSON.stringify(jsonData[jsonData.listName]) + '\' />';
+            appendHtml += '<input type="hidden" name="headers"                   value=\'' + JSON.stringify(jsonData.headers)            + '\' />';
+            appendHtml += '<input type="hidden" name="columns"                   value=\'' + JSON.stringify(jsonData.columns)            + '\' />';
+            //------------------------------------------------------------
+            $form.append(appendHtml);
+            //------------------------------------------------------------
+            $form.attr("action", CONTEXT_PATH + "/exportTblExcel.do");
+            $form.attr("method", "post");
+            $form.attr("target", "downloadFrame");
+            //------------------------------------------------------------
+            // 구간암호화
+            //------------------------------------------------------------
+            if(checkPki()) {
+                PkiUtils.setEncryptData(formObj, PkiUtils.getEncryptData(formObj));
+            }
+            //------------------------------------------------------------
+            formObj.submit();
+            //------------------------------------------------------------
+            $form.remove();
+        }
+        else {
+            Message.alert("export 대상 데이터가 없습니다.");
+        }
+    }
+    else {
+        Message.alert("세션이 만료되었습니다.\n[확인] 버튼을 누르시면 메인 페이지로 이동합니다.", function() {
+            if(window.dialogArguments) {
+                WindowUtil.closeModalPopup(null);
+            }
+            else {
+                goMain();
+            }
+        });
+    }
+}
+
+
+/**
+ * 현재 페이지를 reload 한다.
+ */
+function reload() {
+    var currentUrl = window.location.href;
+    //------------------------------------------------------------
+    // 화면 block
+    //------------------------------------------------------------
+    loadingBlock(true);
+    //------------------------------------------------------------
+    isSubmit = true;
+    //------------------------------------------------------------
+    if(currentUrl.lastIndexOf("#") > -1) {
+        currentUrl = currentUrl.substring(0, currentUrl.lastIndexOf("#"));
+    }
+    //------------------------------------------------------------
+    if(window.dialogArguments) {
+        var reloadFormName = "_reloadForm";
+        //------------------------------------------------------------
+        $("body").append('<form name="' + reloadFormName + ' id="' + reloadFormName + '"></form>');
+        //------------------------------------------------------------
+        var reloadFormObj = getForm("_reloadForm");
+        var $reloadForm = $("form[name=_reloadForm]");
+        //------------------------------------------------------------
+        $reloadForm.attr("method", "post");
+        $reloadForm.attr("action", currentUrl);
+        //------------------------------------------------------------
+        // 구간암호화
+        //------------------------------------------------------------
+        if(checkPki()) {
+            PkiUtils.setEncryptData(reloadFormObj, PkiUtils.getEncryptData(reloadFormObj));
+        }
+        //------------------------------------------------------------
+        reloadFormObj.submit();
+    }
+    else {
+        window.document.location.href = currentUrl;
+    }
+}
+
+
+function goExtraLinkPage(url, target) {
+    top.window.open(url, (target) ? target : "_blank");
+}
+
+
+
+initApp();  // 화면초기화 수행
