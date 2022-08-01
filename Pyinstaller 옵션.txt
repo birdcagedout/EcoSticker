@@ -1,1 +1,11 @@
+// pyinstaller 옵션
 pyinstaller -w -F --icon=.\res\car_icon.ico NScreenPlayer.py
+
+
+// 크롬 드라이버 콘솔창 없애기 
+1) 현재 가상환경에 저장된 selenium 찾기 : C:\ProgramData\Anaconda3\envs\py\Lib\site-packages\selenium\webdriver\common
+2) service.py 찾아서 다음과 같이 편집
+<from>
+self.process = subprocess.Popen(cmd, env=self.env, close_fds=platform.system() != 'Windows', stdout=self.log_file, stderr=self.log_file, stdin=PIPE)
+<to>
+self.process = subprocess.Popen(cmd, stdin=PIPE, stdout=PIPE ,stderr=PIPE, shell=False, creationflags=0x08000000)
