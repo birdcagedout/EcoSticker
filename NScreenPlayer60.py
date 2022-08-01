@@ -10,6 +10,7 @@ from cryptography.fernet import Fernet, InvalidToken 		# 암호화 패키지
 from tkinter import *
 from tkinter import messagebox
 
+import chromedriver_autoinstaller
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -20,8 +21,8 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException,
 CANVAS_WIDTH = 500
 CANVAS_HEIGHT = 540
 
-WIN_POS_X = 1350
-WIN_POS_Y = 150
+WIN_POS_X = 1400
+WIN_POS_Y = 100
 
 X_POS_ISSUENUM = int(CANVAS_WIDTH * 0.32)
 Y_POS_ISSUENUM = int(CANVAS_HEIGHT * 0.685)
@@ -42,6 +43,17 @@ SESSION_INFO_PATH = HOME_PATH + r"/session_info"
 CHROME_DRIVER = HOME_PATH + r"/chromedriver.exe"
 AUTH_FILE = HOME_PATH + r"/Auth.dat"
 
+
+chrome_ver = chromedriver_autoinstaller.get_chrome_version().split('.')[0]
+driver_path = f'./{chrome_ver}/chromedriver.exe'
+if os.path.exists(driver_path):
+    print(f"chrom driver is insatlled: {driver_path}")
+else:
+    print(f"install the chrome driver(ver: {chrome_ver})")
+    chromedriver_autoinstaller.install(True)
+
+
+
 URL_ADMIN = "https://www.ev.or.kr/lcvms-mncpt/login.do"				# 관리자용 저공해차 발급 사이트
 #URL_GUEST = "https://www.ev.or.kr/lcvms-portal/EP020401000SF01.do"	# 일반인용 저공해차 확인 사이트
 
@@ -51,18 +63,17 @@ ADMIN_ID = ""
 ADMIN_PW = ""
 VER = "0.6"
 
+
 # 자동차 등록번호 정규식 	: '[0-9]{2,3}[가-힣][0-9]{4}'
 # 영업용 등록번호 정규식 	: '서울[0-9]{2}[가-힣][0-9]{4}'
 # ==> 2개 통합한 정규식 	: '(서울)?[0-9]{2,3}[가-힣][0-9]{4}'
 
-
-# 로그아웃 버튼 XPATH : '//*[@id="wrap"]/div[2]/div/div/div/ul/li[2]/a'
 ## 테스트 차대번호 : 일반적으로 17자리 (끝자리 6자리 = 반드시 숫자)
 # 1종 : KNAC381AFNA002915 KMHJ8816FNU018004
 # 2종 : KNAPV81GBNK000521 KNARF81GBNA068551
 # 3종 : KPBXH3AT1NP370787 KMHL341DBNA179522
 # *** 독일차 차대번호 : WBA7L7106M7J56681 (끝자리 5개 숫자)
-# *** 예외적 차대번호 : 끝자리 4자리만 숫자도 존재함
+# *** 예외적 차대번호 : 끝자리 3/4자리만 숫자도 존재함
 # *** 발급된 적 없는 차대번호 : KMHE341DBNA616046 (택시)
 
 
