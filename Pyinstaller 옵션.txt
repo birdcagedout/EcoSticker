@@ -1,5 +1,5 @@
 // pyinstaller 옵션
-pyinstaller -w -F --icon=.\res\car_icon.ico NScreenPlayer.py
+pyinstaller -w -F --icon=.\res\car_icon.ico NScreenPlayer70.py
 
 
 // 크롬 드라이버 콘솔창 없애기 
