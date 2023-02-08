@@ -1,0 +1,1 @@
+function getForm(form) { var formObj = null; if(typeof(form) == "object") { formObj = form; } else { var $formByName = $("form[name=" + form + "]"); var $formById = $("form").find("#" + form); if($formByName.length > 0) { formObj = $formByName[0]; } else if($formById.length > 0) { formObj = $formById[0]; }} return formObj; };

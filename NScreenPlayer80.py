@@ -700,7 +700,7 @@ class EcoSticker:
 
 			this_time -= 1
 
-		self.root.geometry(f"+{pos_x}+{pos_y}")
+		self.root.geometry(f"{width}x{height}+{pos_x}+{pos_y}")
 		self.root.update()
 
 

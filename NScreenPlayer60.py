@@ -112,7 +112,7 @@ class WebAgentThread(Thread):
 	# 사이트 접속용 Headless Chrome 생성
 	def getReady(self):
 		self.options = webdriver.ChromeOptions()
-		self.options.add_argument("--headless")		# options.headless = True
+		#self.options.add_argument("--headless")		# options.headless = True
 		self.options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko")	# IE인 것처럼
 		self.options.add_argument("log-level=2")
 		self.options.add_argument("lang=ko_KR")
