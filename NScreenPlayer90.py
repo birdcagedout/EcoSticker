@@ -110,6 +110,7 @@ class WebAgentThread(Thread):
 		self.options = None
 		self.browser = None
 
+		self.eco_process_done : bool = False 		# 발급과정 끝났음(T/F)
 		self.eco_process_success = False	# 발급 성공/실패
 		
 		self.getReady()
@@ -117,15 +118,20 @@ class WebAgentThread(Thread):
 	# 사이트 접속용 Headless Chrome 생성
 	def getReady(self):
 		self.options = Options()
-		#self.options.add_argument("--headless")		# options.headless = True
-		self.options.add_argument(f"user-agent={UserAgent(verify_ssl=False).random}")	# Edge인 것처럼
+		self.options.add_argument("--headless")
+		self.options.add_argument("--incognito")
+		self.options.add_argument("--no-sandbox")
+		self.options.add_argument("--disable-gpu")
+		self.options.add_argument(f"user-agent={UserAgent(verify_ssl=False).random}")	# 랜덤 user-agent
 		self.options.add_argument("log-level=2")
 		self.options.add_argument("lang=ko_KR")
 		self.options.add_argument("start-maximized")
+		self.options.add_argument("--enable-javascript")
+		self.options.add_argument('--disable-blink-features=AutomationControlled')
 		self.options.add_experimental_option('excludeSwitches', ['enable-logging'])		# 불필요한 로그 메시지 없애기
 		self.options.add_experimental_option("excludeSwitches", ["enable-automation"])
 		self.options.add_experimental_option('useAutomationExtension', False)
-		self.options.add_argument("--user-data-dir=" + SESSION_INFO_PATH)				# 세션정보 저장
+		#self.options.add_argument("--user-data-dir=" + SESSION_INFO_PATH)				# 세션정보 저장
 		self.service = Service(executable_path=CHROME_DRIVER)
 		self.browser = webdriver.Chrome(service=self.service, options=self.options)
 
@@ -148,6 +154,7 @@ class WebAgentThread(Thread):
 			self.eco_process_success = False
 			self.browser.close()
 			self.browser.quit()
+			self.eco_process_done = True
 			return
 		
 		# 2-1. ID/PW 조정(test모드냐 아니냐에 따라 ID/PW 다름)
@@ -171,7 +178,7 @@ class WebAgentThread(Thread):
 				pw_field.send_keys(char)
 				time.sleep(0.15)
 			
-			#login_btn = self.browser.find_element(By.CLASS_NAME, "btn_login.mt20")		# 로그인버튼
+			#login_btn = self.browser.find_element(By.CLASS_NAME, "btn_login.mt20")		# 로그인버튼 
 			#self.browser.execute_script("arguments[0].click();", login_btn)
 			self.browser.execute_script("""getForm = function (form) { var formObj = null; if(typeof(form) == "object") { formObj = form; } else { var $formByName = $("form[name=" + form + "]"); var $formById = $("form").find("#" + form); if($formByName.length > 0) { formObj = $formByName[0]; } else if($formById.length > 0) { formObj = $formById[0]; }} return formObj; };""")
 			time.sleep(0.5)
@@ -188,6 +195,7 @@ class WebAgentThread(Thread):
 			self.login_test_success = False
 			self.browser.close()
 			self.browser.quit()
+			self.eco_process_done = True
 			return
 		
 		# 2-2. 로그인 : 로그인 테스트 모드이면 ==> 성공/실패 저장 + 로그아웃
@@ -204,6 +212,7 @@ class WebAgentThread(Thread):
 
 			self.browser.close()
 			self.browser.quit()
+			self.eco_process_done = True
 			return
 		
 
@@ -269,6 +278,7 @@ class WebAgentThread(Thread):
 			logout_btn.click()
 			self.browser.close()
 			self.browser.quit()
+			self.eco_process_done = True
 			return
 		
 		# 저공해 정보 뜬 경우 ==> "발급" 버튼 클릭
@@ -316,6 +326,7 @@ class WebAgentThread(Thread):
 		logout_btn.click()
 		self.browser.close()
 		self.browser.quit()
+		self.eco_process_done = True
 		return
 
 
@@ -342,6 +353,7 @@ class EcoSticker:
 		self.root.geometry(f"{CANVAS_WIDTH}x{CANVAS_HEIGHT}+{WIN_POS_X}+{WIN_POS_Y}")
 		self.root.resizable(False, False)
 		self.root.wm_attributes("-topmost", True)
+		self.root.wm_attributes("-topmost", False)
 
 		# 배경 이미지 + 버튼 이미지 : (경로설정은 r string : file=r"res\bg_nature.png")
 		#self.img_bg0 = PhotoImage(file=r"res\bg_field_sky.png")		# 기본 배경(자연)
@@ -456,6 +468,7 @@ class EcoSticker:
 
 		# 항상 맨 위
 		self.root.wm_attributes("-topmost", True)
+		self.root.wm_attributes("-topmost", False)
 		self.root.update()
 
 	#########################################################
@@ -497,6 +510,7 @@ class EcoSticker:
 			self.new_regnum = True
 			
 			self.root.wm_attributes("-topmost", True)
+			self.root.wm_attributes("-topmost", False)
 			self.root.update()
 
 			return True
@@ -526,6 +540,8 @@ class EcoSticker:
 			self.vin_entered = current_clipboard
 
 			self.root.wm_attributes("-topmost", True)
+			self.root.wm_attributes("-topmost", False)
+			self.root.lift()
 			self.root.update()
 
 			return True
@@ -596,7 +612,7 @@ class EcoSticker:
 		# 쓰레드 시작(발급버튼 눌림)
 		if self.thread_working == True:
 
-			while self.web_agent.is_alive() == True:
+			while self.web_agent.eco_process_done == False:
 				# 대기 캔버스
 				self.canvas.itemconfig(self.canvas_img_id, image=self.img_bg_wait)
 				#self.canvas.itemconfig(self.canvas_text_processing_id, text="처리중입니다...")
@@ -607,9 +623,12 @@ class EcoSticker:
 
 				# 로딩화면 보여주기
 				for current_frame in self.img_loader_frames:
+					if self.web_agent.eco_process_done == True:
+						break
 					self.label_loader.configure(image=current_frame)
 					self.root.update()
 					time.sleep(0.03)
+					print(self.web_agent.eco_process_done)		# 디버그용
 
 			# 쓰레드에서 발급 성공
 			if self.web_agent.eco_process_success == True:
@@ -753,6 +772,7 @@ class LoginAgent:
 		self.root.title("관리자 로그인")
 		self.root.resizable(False, False)
 		self.root.wm_attributes("-topmost", True)
+		self.root.wm_attributes("-topmost", False)
 	
 		# 아이디 / 비밀번호 텍스트 라벨
 		self.label_ID = Label(self.root, text=" 아이디 ")
