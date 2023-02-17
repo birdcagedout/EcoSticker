@@ -1,5 +1,3 @@
-import ptvsd												# 멀티쓰레드 디버그 툴
-
 import re
 import os
 import sys
@@ -13,7 +11,6 @@ from tkinter import *
 from tkinter import messagebox
 
 import chromedriver_autoinstaller
-from fake_useragent import UserAgent
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service				# 0.81 추가
@@ -46,7 +43,6 @@ Y_POS_REGNUM = int(CANVAS_HEIGHT * 0.785)
 
 HOME_PATH = r"C:/EcoSticker"
 SESSION_INFO_PATH = HOME_PATH + r"/session_info"
-#CHROME_DRIVER = HOME_PATH + r"/chromedriver.exe"
 AUTH_FILE = HOME_PATH + r"/Auth.dat"
 
 # chromedriver_autoinstaller로 현재 크롬 버전에 맞는 드라이버 자동 다운로드
@@ -70,6 +66,7 @@ ADMIN_PW = ""
 VER = "0.92"														# 0.6 ==> 0.7(크롬드라이버 자동설치 + 크롬드라이버 중복실행 제거 browser.close + browser.quit)
 																	# 0.82 : Selenium4에 맞게 함수 고침, 0.83: 'useAutomationExtension'=False
 																	# 0.9 : send_key(Keys.Enter)로 안눌리는 버튼 누르기 성공
+																	# 0.91 : Javascript Injection
 
 # 자동차 등록번호 정규식 	: '[0-9]{2,3}[가-힣][0-9]{4}'
 # 영업용 등록번호 정규식 	: '서울[0-9]{2}[가-힣][0-9]{4}'
@@ -109,11 +106,14 @@ class WebAgentThread(Thread):
 		self.testID = testID
 		self.testPW = testPW
 
+		# 브라우저 변수
 		self.options = None
 		self.browser = None
 
+		# 저공해차 표지 발급 과정 변수
 		self.eco_process_done = False 		# 발급과정 끝났음
 		self.eco_process_success = False	# 발급 성공/실패
+		self.eco_process_message = ""		# 발급 절차 팝업창 메시지
 		
 		self.getReady()
 
@@ -124,7 +124,7 @@ class WebAgentThread(Thread):
 		#self.options.add_argument("--incognito")
 		#self.options.add_argument("--no-sandbox")
 		#self.options.add_argument("--disable-gpu")
-		self.options.add_argument(f"user-agent={UserAgent(verify_ssl=False).random}")	# 랜덤 user-agent
+		self.options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.46")
 		self.options.add_argument("log-level=2")
 		self.options.add_argument("lang=ko_KR")
 		self.options.add_argument("start-maximized")
@@ -146,7 +146,7 @@ class WebAgentThread(Thread):
 
 	# 쓰레드 실행함수
 	def run(self):
-		ptvsd.debug_this_thread()
+		#ptvsd.debug_this_thread()
 		# 1. 저공해차 확인 사이트 접속
 		print("[저공해 확인] 저공해 발급사이트 접속합니다...")
 		try:
@@ -225,7 +225,7 @@ class WebAgentThread(Thread):
 		# "닫기" 버튼 XPATH : '//*[@id="reqBtnClose1"]'
 		# 뜨면 닫고, 안 뜨면 말고 ==> NoSuchElementException, ElementNotInteractableException
 		try:
-			notice_close_btn = WebDriverWait(self.browser, 3).until(EC.presence_of_element_located((By.XPATH, '//*[@id="reqBtnClose1"]')))
+			notice_close_btn = WebDriverWait(self.browser, 1).until(EC.presence_of_element_located((By.XPATH, '//*[@id="reqBtnClose1"]')))
 			notice_close_btn.click()
 		except (NoSuchElementException, ElementNotInteractableException, TimeoutException): 
 			pass
@@ -240,13 +240,34 @@ class WebAgentThread(Thread):
 		try:
 			# 오류 팝업의 "확인" 버튼 XPATH : '//*[@id="layerPop2"]/div/div[2]/div/div[2]/a'
 			# 오류 팝업의 "내용" XPATH 		: '//*[@id="layerPop2"]/div/div[2]/div/div[1]'
+
+			# <저공해 차량인데 당일 등록한 경우>
+			#   팝업1 : "요청 차량은 당일등록차량입니다. *표지발급은 필요시 저공해차관련 서류를 확인 후 진행하시기 바랍니다."	==> "당일등록차량입니다"
+
 			# <저공해 차량이 아닌 경우>
-			# 	팝업1 : "요청하신 차량은 조회결과가 없습니다. 제원번호 입력 후 확인해주세요."
-			# 	팝업2 : "차대번호 또는 차량등록번호를 입력해주세요."
-			# 	팝업3 : "요청하신 차량은 저공해차 차량이 아닙니다.(제원번호미존재)"
+			# 	팝업1 : "요청하신 차량은 조회결과가 없습니다. 제원번호 입력 후 확인해주세요."									==> "조회결과가 없습니다"
+			# 	팝업2 : "요청하신 차량은 저공해차 차량이 아닙니다.(제원번호미존재)"												==> "저공해차 차량이 아닙니다"
+			#   팝업3 : "2020년 4월 3일 부터 법개정으로 인하여 경유를 연료로 하는 자동차는 저공해차에서 제외되었습니다."		==> "저공해차에서 제외되었습니다"
+			# 	팝업4 : "차대번호 또는 차량등록번호를 입력해주세요."
 			# <저공해 차량인데 1개만 넣은 경우>
 			# 	팝업1 : "차량등록번호를 입력해주세요."
 			# 	팝업2 : "차대번호를 입력해주세요."
+			# <사이트 내부 오류인 경우>
+			#   팝업1 : "표지발급정보 조회 중 오류가 발생하였습니다. ~~오류내용~~"												==> "오류가 발생하였습니다"
+			""" 예를 들면
+			표지발급정보 조회 중 오류가 발생하였습니다.
+			SqlMapClient operation; SQL [];
+			--- The error occurred in sqlmap/lcvi/I010001000EV.xml.
+			--- The error occurred while applying a parameter map.
+			--- Check the lcvi.01.00.010.ev.getFuelcd-InlineParameterMap.
+			--- Check the statement (query failed).
+			--- Cause: java.sql.SQLRecoverableException: 소켓에서 읽을 데이터가 없습니다; nested exception is com.ibatis.common.jdbc.exception.NestedSQLException:
+			--- The error occurred in sqlmap/lcvi/I010001000EV.xml.
+			--- The error occurred while applying a parameter map.
+			--- Check the lcvi.01.00.010.ev.getFuelcd-InlineParameterMap.
+			--- Check the statement (query failed).
+			--- Cause: java.sql.SQLRecoverableException: 소켓에서 읽을 데이터가 없습니다
+			"""
 
 			#############################################################
 			# 긴급공지 : "당일등록차량이거나 저공해차대상이 아닙니다." ==> 당일등록 차량에 대해 무조건 팝업 나옴 ==> 무시
@@ -267,6 +288,18 @@ class WebAgentThread(Thread):
 			print(err)																						# 디버깅용3
 			#pass
 
+		# 저공해차 아닌 경우 / 
+		if ("조회결과가 없습니다" in alert_message):
+			self.eco_process_message = "저공해 차량 조회결과가 없습니다"
+		if ("저공해차 차량이 아닙니다" in alert_message):
+			self.eco_process_message = "저공해 차량이 아닙니다"
+		if ("저공해차에서 제외되었습니다" in alert_message):
+			self.eco_process_message = "경유차는 저공해차에서 제외되었습니다"
+		# 사이트 내부 오류 발생한 경우
+		if ("오류가 발생하였습니다" in alert_message):
+			self.eco_process_message = "사이트 내부 오류가 발생하였습니다"
+		
+
 		# 조회결과 : 저공해 차량은 "인증번호" 나옴 / 저공해 차량이 아닌 경우 self.auth_num = ""
 		self.auth_num = self.browser.find_element(By.XPATH, '//*[@id="CRTF_NO"]').text.strip()		# 인증번호
 
@@ -274,12 +307,12 @@ class WebAgentThread(Thread):
 		if (self.auth_num == "") or (self.auth_num[8] not in ["1", "2", "3"]):
 			print("저공해차량의 인증번호가 확인되지 않습니다.")
 			# 실패 + 로그아웃 버튼 클릭
-			self.eco_process_success = False
 			logout_btn = WebDriverWait(self.browser, 1).until(EC.presence_of_element_located((By.XPATH, '//*[@id="wrap"]/div[2]/div/div/div/ul/li[2]/a')))
 			logout_btn.click()
 			self.browser.close()
 			self.browser.quit()
 			self.eco_process_done = True
+			self.eco_process_success = False
 			return
 		
 		# 저공해 정보 뜬 경우 ==> "발급" 버튼 클릭
@@ -639,7 +672,7 @@ class EcoSticker:
 			# 쓰레드에서 발급 실패
 			else:
 				print("[저공해 발급] 오류 발생")
-				response = messagebox.askretrycancel("조회 오류", "저공해 차량정보가 조회되지 않습니다.\n한번 더 확인하시려면 '다시 시도' 클릭\n처음으로 돌아가시려면 '취소' 클릭")
+				response = messagebox.askretrycancel("발급 실패", self.web_agent.eco_process_message + "\n한번 더 확인하시려면 '다시 시도' 클릭\n처음으로 돌아가시려면 '취소' 클릭")
 				if response == True:
 					# 재시도 = True
 					retry = True
@@ -687,14 +720,17 @@ class EcoSticker:
 	# 윈도 흔들기 : horizontal=True이면 좌우방향, False이면 상하방향
 	def win_shake(self, horizontal=True):
 
+		# 윈도 창 맨 앞 활성화
+		self.root.wm_attributes("-topmost", True)
+		self.root.wm_attributes("-topmost", False)
+
 		# 창이 최소화 상태라면 원래대로 restore
 		if self.root.state() == "iconic":
 			self.root.deiconify()
 			time.sleep(0.5)
 
-
 		# 흔드는 횟수
-		total_times = 10
+		total_times = 30
 		this_time = total_times
 
 		##################################################

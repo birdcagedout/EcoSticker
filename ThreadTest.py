@@ -73,20 +73,42 @@ class WebAgentThread(Thread):
 		self.browser.find_element_by_id('btnSearch').click()									# 확인(검색)버튼 클릭
 		print("[저공해 확인] 차대입력 후 확인 버튼 클릭!")
 
-		# Case1. 오류 팝업 나오는 경우 ==> 기다렸다가 오류 팝업의 "확인" 버튼 클릭
+		# Case1. 팝업 나오는 경우 ==> 기다렸다가 팝업의 "확인" 버튼 클릭
 		try:
 			# 오류 팝업의 "확인" 버튼 XPATH : '//*[@id="layerPop2"]/div/div[2]/div/div[2]/a'
 			# 오류 팝업의 "내용" XPATH : '//*[@id="layerPop2"]/div/div[2]/div/div[1]'
+
+			# <저공해 차량인데 당일 등록한 경우>
+			#   팝업1 : "요청 차량은 당일등록차량입니다. *표지발급은 필요시 저공해차관련 서류를 확인 후 진행하시기 바랍니다."	==> "당일등록차량입니다"
+
 			# <저공해 차량이 아닌 경우>
-			# 	팝업1 : "요청하신 차량은 조회결과가 없습니다. 제원번호 입력 후 확인해주세요."
-			# 	팝업2 : "차대번호 또는 차량등록번호를 입력해주세요."
-			# 	팝업3 : "요청하신 차량은 저공해차 차량이 아닙니다.(제원번호미존재)"
+			# 	팝업1 : "요청하신 차량은 조회결과가 없습니다. 제원번호 입력 후 확인해주세요."									==> "조회결과가 없습니다"
+			# 	팝업2 : "요청하신 차량은 저공해차 차량이 아닙니다.(제원번호미존재)"												==> "저공해차 차량이 아닙니다"
+			#   팝업3 : "2020년 4월 3일 부터 법개정으로 인하여 경유를 연료로 하는 자동차는 저공해차에서 제외되었습니다."		==> "저공해차에서 제외되었습니다"
+			# 	팝업4 : "차대번호 또는 차량등록번호를 입력해주세요."
 			# <저공해 차량인데 1개만 넣은 경우>
 			# 	팝업1 : "차량등록번호를 입력해주세요."
 			# 	팝업2 : "차대번호를 입력해주세요."
+			# <사이트 내부 오류인 경우>
+			#   팝업1 : "표지발급정보 조회 중 오류가 발생하였습니다. ~~오류내용~~"												==> "오류가 발생하였습니다"
+			""" 예를 들면
+			표지발급정보 조회 중 오류가 발생하였습니다.
+			SqlMapClient operation; SQL [];
+			--- The error occurred in sqlmap/lcvi/I010001000EV.xml.
+			--- The error occurred while applying a parameter map.
+			--- Check the lcvi.01.00.010.ev.getFuelcd-InlineParameterMap.
+			--- Check the statement (query failed).
+			--- Cause: java.sql.SQLRecoverableException: 소켓에서 읽을 데이터가 없습니다; nested exception is com.ibatis.common.jdbc.exception.NestedSQLException:
+			--- The error occurred in sqlmap/lcvi/I010001000EV.xml.
+			--- The error occurred while applying a parameter map.
+			--- Check the lcvi.01.00.010.ev.getFuelcd-InlineParameterMap.
+			--- Check the statement (query failed).
+			--- Cause: java.sql.SQLRecoverableException: 소켓에서 읽을 데이터가 없습니다
+			"""
 			alert_button = WebDriverWait(self.browser, 6).until(EC.presence_of_element_located((By.XPATH, '//*[@id="layerPop2"]/div/div[2]/div/div[2]/a')))
 			alert_message = self.browser.find_element_by_xpath('//*[@id="layerPop2"]/div/div[2]/div/div[1]').text
 			print("[저공해 확인] 오류 팝업 메시지: {} \t 길이: {}".format(alert_message, len(alert_message)))		# 메시지와 메시지의 길이
+
 			self.browser.execute_script("arguments[0].click();", alert_button)
 			
 			self.eco_process_success = False
