@@ -63,8 +63,9 @@ AUTHENTICATION_SUCCESS = False
 AUTH_DEFAULT_KEY = "EcoSticker2021 by Kim Jae Hyoung"				# 길이=32byte : base64.urlsafe_b64decode(key)=32
 ADMIN_ID = ""
 ADMIN_PW = ""
+
+
 VER = "0.94"														# 0.6 ==> 0.7(크롬드라이버 자동설치 + 크롬드라이버 중복실행 제거 browser.close + browser.quit)
-			
 																	# 0.82 : Selenium4에 맞게 함수 고침, 0.83: 'useAutomationExtension'=False
 																	# 0.9 : send_key(Keys.Enter)로 안눌리는 버튼 누르기 성공
 																	# 0.91 : Javascript Injection
@@ -122,7 +123,7 @@ class WebAgentThread(Thread):
 	# 사이트 접속용 Headless Chrome 생성
 	def getReady(self):
 		self.options = Options()
-		self.options.add_argument("--headless")
+		# self.options.add_argument("--headless")
 		#self.options.add_argument("--incognito")
 		#self.options.add_argument("--no-sandbox")
 		#self.options.add_argument("--disable-gpu")
@@ -282,9 +283,18 @@ class WebAgentThread(Thread):
 			alert_message = self.browser.find_element(By.XPATH, '//*[@id="layerPop2"]/div/div[2]/div/div[1]').text
 			print(f"[저공해 확인] 오류 팝업 메시지: {alert_message} \t 길이: {len(alert_message)}")		# 메시지와 메시지의 길이
 			alert_button.click()
+			time.sleep(1)
 
-		# Case2. 오류팝업/긴급공지 없는 경우 : 사이트의 저공해 정보 추출
-		except (TimeoutException, NoSuchElementException, ElementNotInteractableException) as err:
+		# Case2. 10초 timeout 결과 안 나온 경우
+		except TimeoutException as err:
+			print(err)
+			self.browser.close()
+			self.browser.quit()
+			self.eco_process_done = True
+			self.eco_process_success = False
+			return
+
+		except (NoSuchElementException, ElementNotInteractableException) as err:
 			#print(sys.exc_info()[1])																		# 디버깅용1
 			#import traceback
 			#traceback.print_exception(etype=sys.last_type,value=sys.last_value,tb=sys.last_traceback)		# 디버깅용2
@@ -308,14 +318,19 @@ class WebAgentThread(Thread):
 			self.eco_process_message = "사이트 내부 오류가 발생하였습니다"
 		
 
+		
 		# 조회결과 : 저공해 차량은 "인증번호" 나옴 / 저공해 차량이 아닌 경우 self.auth_num = ""
 		self.auth_num = self.browser.find_element(By.XPATH, '//*[@id="CRTF_NO"]').text.strip()		# 인증번호
+		self.eco_class = self.browser.find_element(By.XPATH, '//*[@id="ECO_NO"]').text.strip()		# O종
+		
 
 		# 인증번호 확인 ==> 저공해차량 아닌 경우
-		if (self.auth_num == "") or (self.auth_num[8] not in ["1", "2", "3"]):
+		#if (self.auth_num == "") or (self.eco_class not in ["1종", "2종", "3종"]):
+		if self.auth_num == "":
 			print("저공해차량의 인증번호가 확인되지 않습니다.")
 			# 실패 + 로그아웃 버튼 클릭
-			logout_btn = WebDriverWait(self.browser, 1).until(EC.presence_of_element_located((By.XPATH, '//*[@id="wrap"]/div[2]/div/div/div/ul/li[2]/a')))
+			#logout_btn = WebDriverWait(self.browser, 1).until(EC.presence_of_element_located((By.XPATH, '//*[@id="wrap"]/div[2]/div/div/div/ul/li[2]/a')))
+			logout_btn = self.browser.find_element(By.XPATH, '//*[@id="wrap"]/div[2]/div/div/div/ul/li[2]/a')
 			logout_btn.click()
 			self.browser.close()
 			self.browser.quit()
@@ -679,8 +694,11 @@ class EcoSticker:
 
 			# 쓰레드에서 발급 실패
 			else:
+				self.root.wm_attributes("-topmost", True)
+				self.root.update()
 				print("[저공해 발급] 오류 발생")
-				response = messagebox.askretrycancel("발급 실패", self.web_agent.eco_process_message + "\n한번 더 확인하시려면 '다시 시도' 클릭\n처음으로 돌아가시려면 '취소' 클릭")
+				response = messagebox.askretrycancel("발급 실패", "발급 실패 사유:\n" + self.web_agent.eco_process_message + "\n한번 더 확인하시려면 '다시 시도' 클릭\n처음으로 돌아가시려면 '취소' 클릭")
+				self.root.wm_attributes("-topmost", False)
 				if response == True:
 					# 재시도 = True
 					retry = True

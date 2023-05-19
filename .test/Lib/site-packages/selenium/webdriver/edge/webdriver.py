@@ -18,6 +18,7 @@ import warnings
 
 from selenium.webdriver.chromium.webdriver import ChromiumDriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.common.driver_finder import DriverFinder
 
 from .options import Options
 from .service import DEFAULT_EXECUTABLE_PATH
@@ -30,9 +31,8 @@ DEFAULT_SERVICE_LOG_PATH = None
 class WebDriver(ChromiumDriver):
     """Controls the Microsoft Edge driver and allows you to drive the browser.
 
-    You will need to download the MSEdgeDriver (Chromium) executable
-    from https://developer.microsoft.com/en-us/microsoft-
-    edge/tools/webdriver/
+    You will need to download the MSEdgeDriver executable from
+    https://developer.microsoft.com/microsoft-edge/tools/webdriver/
     """
 
     def __init__(
@@ -67,8 +67,11 @@ class WebDriver(ChromiumDriver):
                 "executable_path has been deprecated, please pass in a Service object", DeprecationWarning, stacklevel=2
             )
 
+        if not options:
+            options = self.create_options()
         if not service:
             service = Service(executable_path, port, service_args, service_log_path)
+        service.path = DriverFinder.get_path(service, options)
 
         super().__init__(
             DesiredCapabilities.EDGE["browserName"],
