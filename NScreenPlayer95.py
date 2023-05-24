@@ -157,6 +157,7 @@ class WebAgentThread(Thread):
 			self.browser.implicitly_wait(2)		# 페이지 완전히 로딩될 때까지 최대 2초 기다린다.
 		except NewConnectionError as nce:
 			print("[로그인 확인] 발급사이트와 연결되지 못했습니다.(연결거부 or 서버장애)")
+			self.eco_process_message = "저공해 발급 사이트 접속장애입니다"
 			self.eco_process_success = False
 			self.browser.close()
 			self.browser.quit()
@@ -200,6 +201,7 @@ class WebAgentThread(Thread):
 			print("[저공해 확인] 로그인 중 예상 못한 오류 발생")
 			print(f"Exception Type: {type(e)}, Exception: {e}")
 			#print(sys.exc_info()[1])
+			self.eco_process_message = "로그인 중 예상 못한 오류가 발생하였습니다"
 			self.login_test_success = False
 			self.browser.close()
 			self.browser.quit()
@@ -227,8 +229,9 @@ class WebAgentThread(Thread):
 		# 공지사항 "당일 등록차량에 대하여 표지발급이 아닌 임의표지발급으로만 처리되던 사항은 수정하였습니다."
 		# "닫기" 버튼 XPATH : '//*[@id="reqBtnClose1"]'
 		# 뜨면 닫고, 안 뜨면 말고 ==> NoSuchElementException, ElementNotInteractableException
+		# 2023. 5. 현재는 안 뜬다
 		try:
-			notice_close_btn = WebDriverWait(self.browser, 1).until(EC.presence_of_element_located((By.XPATH, '//*[@id="reqBtnClose1"]')))
+			notice_close_btn = WebDriverWait(self.browser, 0.5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="reqBtnClose1"]')))
 			notice_close_btn.click()
 		except (NoSuchElementException, ElementNotInteractableException, TimeoutException): 
 			pass
@@ -284,12 +287,12 @@ class WebAgentThread(Thread):
 			alert_message = self.browser.find_element(By.XPATH, '//*[@id="layerPop2"]/div/div[2]/div/div[1]').text
 			print(f"[저공해 확인] 오류 팝업 메시지: {alert_message} \t 길이: {len(alert_message)}")		# 메시지와 메시지의 길이
 			alert_button.click()
-			time.sleep(1)
+			time.sleep(0.5)
 
 		# Case2. 10초 timeout 결과 안 나온 경우
 		except TimeoutException as err:
 			print(err)
-			self.eco_process_message = "저공해차 확인 중 제한시간(10초)이 초과되었습니다\n"
+			self.eco_process_message = "저공해차 확인 중 제한시간(10초)이 초과되었습니다"
 			self.browser.close()
 			self.browser.quit()
 			self.eco_process_done = True
@@ -302,7 +305,7 @@ class WebAgentThread(Thread):
 			#import traceback
 			#traceback.print_exception(etype=sys.last_type,value=sys.last_value,tb=sys.last_traceback)		# 디버깅용2
 			print(err)																						# 디버깅용3
-			self.eco_process_message = f"저공해차 확인 중 Timeout 외의 오류({err})가 발생하였습니다\n"
+			self.eco_process_message = f"저공해차 확인 중 Timeout 외의 오류({err})가 발생하였습니다"
 			self.browser.close()
 			self.browser.quit()
 			self.eco_process_done = True
@@ -312,7 +315,9 @@ class WebAgentThread(Thread):
 		# 당일등록 차량입니다 ==> 저공해차 정보가 나오면 에러메시지 내보낼 필요 없음 / 저공해차 정보가 안 나오면 에러메시지에 "당일등록차량 + 제원정보 없음"
 		if "당일등록차량입니다" in alert_message:
 			#self.eco_process_message += "당일등록차량의 저공해차 정보가 없습니다"
-			self.eco_process_message += "당일등록차량입니다\n"
+			#self.eco_process_message += "당일등록차량입니다\n"
+			pass
+
 		# 저공해차 아닌 경우
 		if "저공해차 제원정보가 없습니다" in alert_message:
 			self.eco_process_message += "저공해차 제원정보가 없습니다\n"
@@ -337,7 +342,7 @@ class WebAgentThread(Thread):
 		#if (self.auth_num == "") or (self.eco_class not in ["1종", "2종", "3종"]):
 		if self.auth_num == "":
 			print("저공해차량의 인증번호가 확인되지 않습니다.")
-			self.eco_process_message += "+ 저공해차량의 인증번호가 확인되지 않습니다"
+			self.eco_process_message += f"(디버깅 정보 ==> 인증번호: {self.auth_num}, 저공해: {self.eco_class}종)"
 			# 실패 + 로그아웃 버튼 클릭
 			#logout_btn = WebDriverWait(self.browser, 1).until(EC.presence_of_element_located((By.XPATH, '//*[@id="wrap"]/div[2]/div/div/div/ul/li[2]/a')))
 			logout_btn = self.browser.find_element(By.XPATH, '//*[@id="wrap"]/div[2]/div/div/div/ul/li[2]/a')
@@ -357,7 +362,7 @@ class WebAgentThread(Thread):
 		# Case1. 정상적으로 "표지발급이 완료되었습니다." 팝업창 기다림 ==> 닫기
 		# 팝업창 확인 버튼	: '//*[@id="layerPop2"]/div/div[2]/div/div[2]/a'
 		try:
-			alert_button = WebDriverWait(self.browser, 2).until(EC.presence_of_element_located((By.XPATH, '//*[@id="layerPop2"]/div/div[2]/div/div[2]/a')))
+			alert_button = WebDriverWait(self.browser, 1).until(EC.presence_of_element_located((By.XPATH, '//*[@id="layerPop2"]/div/div[2]/div/div[2]/a')))
 			self.browser.execute_script("arguments[0].click();", alert_button)
 			print("[스티커 발급 성공] 표지가 정상적으로 발급되었습니다.")
 
@@ -707,7 +712,7 @@ class EcoSticker:
 				self.root.wm_attributes("-topmost", True)
 				self.root.update()
 				print("[저공해 발급] 오류 발생")
-				response = messagebox.askretrycancel("발급 실패", "발급 실패 사유:\n" + self.web_agent.eco_process_message + "\n한번 더 확인하시려면 '다시 시도' 클릭\n처음으로 돌아가시려면 '취소' 클릭")
+				response = messagebox.askretrycancel("발급 실패", "발급실패 사유: " + self.web_agent.eco_process_message + "\n한번 더 확인하시려면 '다시 시도' 클릭\n처음으로 돌아가시려면 '취소' 클릭")
 				self.root.wm_attributes("-topmost", False)
 				if response == True:
 					# 재시도 = True
