@@ -16,6 +16,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service				# 0.81 추가
 from selenium.webdriver.chrome.options import Options				# 0.81 추가
+from selenium.webdriver.chrome.webdriver import WebDriver			# 1.0 추가
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -88,10 +89,12 @@ VER = "0.96"														# 0.6 ==> 0.7(크롬드라이버 자동설치 + 크롬
 
 
 
+
+
 # 브라우저 접속용 쓰레드 함수 : login + check + issue 통합
 class WebAgentThread(Thread):
 	# 초기화
-	def __init__(self, login_test=False, testID="", testPW=""):
+	def __init__(self, browser: WebDriver, login_test=False, testID="", testPW=""):
 		super(WebAgentThread, self).__init__(daemon=True)
 
 		# 내부 변수 초기화
@@ -121,27 +124,7 @@ class WebAgentThread(Thread):
 		self.eco_process_success = False	# 발급 성공/실패
 		self.eco_process_message = ""		# 발급 절차 팝업창 메시지
 		
-		self.getReady()
-
-	# 사이트 접속용 Headless Chrome 생성
-	def getReady(self):
-		self.options = Options()
-		#self.options.add_argument("--headless")
-		#self.options.add_argument("--incognito")
-		#self.options.add_argument("--no-sandbox")
-		#self.options.add_argument("--disable-gpu")
-		self.options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.46")
-		self.options.add_argument("log-level=2")
-		self.options.add_argument("lang=ko_KR")
-		self.options.add_argument("start-maximized")
-		self.options.add_argument("--enable-javascript")
-		self.options.add_argument('--disable-blink-features=AutomationControlled')		# 웹드라이버 사용 은폐하기 (콘솔에서 navigator.webdriver = false)
-		self.options.add_experimental_option('excludeSwitches', ['enable-logging'])		# 불필요한 로그 메시지 없애기
-		self.options.add_experimental_option("excludeSwitches", ["enable-automation"])
-		self.options.add_experimental_option('useAutomationExtension', False)
-		#self.options.add_argument("--user-data-dir=" + SESSION_INFO_PATH)				# 세션정보 저장
-		self.service = Service(executable_path=CHROME_DRIVER)
-		self.browser = webdriver.Chrome(service=self.service, options=self.options)
+		self.browser = browser
 
 	
 	# 등록번호 / 차대번호 입력
@@ -198,14 +181,21 @@ class WebAgentThread(Thread):
 			#self.browser.execute_script("""(function () { var $loginForm = $(getForm("_loginForm")); $loginForm.attr("action", CONTEXT_PATH + "/j_spring_security_check"); formSubmit($loginForm[0]); })()""")
 			time.sleep(0.5)
 
-		except Exception as e:
-			print("[저공해 확인] 로그인 중 예상 못한 오류 발생")
+		
+		############################################################
+		# 1) ID, PW와 버튼이 없는 경우 (또는)
+		# 2) 접근제한된 페이지입니다.(권한 없는 PC에서 접속한 경우)
+		# '//*[@id="content"]/div/div/div/div/h3'
+		#
+		except Exception as e:	
+			print("[저공해 확인] 로그인 도중 에러 발생")
 			print(f"Exception Type: {type(e)}, Exception: {e}")
 			#print(sys.exc_info()[1])
-			self.eco_process_message = f"로그인 중 예상 못한 오류({e})가 발생하였습니다"
+			self.eco_process_message = f"로그인 도중 에러({e})가 발생하였습니다"
 			self.login_test_success = False
 			ECO_PROCESS_DONE = True
 			return
+
 		
 		
 		#############################################################
@@ -449,7 +439,9 @@ class WebAgentThread(Thread):
 class EcoSticker:
 	#########################################################
 	# 생성자(초기화)
-	def __init__(self):
+	def __init__(self, browser: WebDriver):
+		self.browser = browser
+
 		# Tk윈도 생성
 		self.root = Tk()
 		self.root.iconbitmap(r"res\car_icon.ico")
@@ -517,7 +509,7 @@ class EcoSticker:
 		self.issue_num = ""
 
 		# 쓰레드 생성
-		self.web_agent = WebAgentThread()
+		self.web_agent = WebAgentThread(self.browser)
 
 		# 총괄함수
 		self.automate()
@@ -570,7 +562,7 @@ class EcoSticker:
 		# 쓰레드 객체 삭제 후 생성
 		#self.web_agent.join()
 		#del self.web_agent
-		self.web_agent = WebAgentThread()
+		self.web_agent = WebAgentThread(self.browser)
 
 		# 항상 맨 위
 		self.root.wm_attributes("-topmost", True)
@@ -767,7 +759,7 @@ class EcoSticker:
 					# 쓰레드 죽이고 + 다시 생성 + 쓰레드 시작
 					#self.web_agent.join()							# 이미 쓰레드의 run() 함수는 terminate되었기 때문에 기다릴 필요가 없다(이미 is_alive() == False)
 					#del self.web_agent
-					self.web_agent = WebAgentThread()
+					self.web_agent = WebAgentThread(self.browser)
 					self.web_agent.setCarInfo(reg_num=self.regnum_entered, vin_num=self.vin_entered)
 					self.web_agent.start()
 
@@ -883,7 +875,8 @@ class EcoSticker:
 ##		- login_test()	: 쓰레드로 실제 로그인 수행하는 함수
 ################################################################################
 class LoginAgent:
-	def __init__(self):
+	def __init__(self, browser: WebDriver):
+		self.browser = browser
 
 		# 접속 성공 flag
 		self.login_success = False
@@ -982,13 +975,13 @@ class LoginAgent:
 	
 	def login_test(self):
 		# 쓰레드 생성
-		login_thread = WebAgentThread(login_test=True, testID=self.entry_ID.get().strip(), testPW=self.entry_PW.get().strip())
+		login_thread = WebAgentThread(self.browser, login_test=True, testID=self.entry_ID.get().strip(), testPW=self.entry_PW.get().strip())
 		login_thread.start()
 
 		while login_thread.login_test_success == None:
 			time.sleep(0.1)
 
-		#login_thread.join()
+		login_thread.join()
 		return login_thread.login_test_success
 
 
@@ -1058,13 +1051,14 @@ class LoginAgent:
 class LoadAuthInfo:
 	# 초기화
 	def __init__(self):
+
 		self.key = base64.urlsafe_b64encode((AUTH_DEFAULT_KEY.encode("utf-8")))		# encode 결과 = b'EcoSticker2021 by Kim Jae Hyoung'
 		self.fernet = Fernet(self.key)
 
 		self.ID = ""
 		self.PW = ""
 		self.file_exists = False
-		self.load_auth_success = False
+		self.login_success = False
 
 		self.get_auth_from_file()
 
@@ -1089,35 +1083,16 @@ class LoadAuthInfo:
 			self.file_exists = False
 			return
 		
-		# 파일 읽고/decrypt/decode하는 동안 오류가 발생하지 않았다면 ==> 로그인 테스트
-		login_thread = WebAgentThread(login_test=True, testID=self.ID, testPW=self.PW)
-		login_thread.start()
+		# 파일 읽고/decrypt/decode하는 동안 오류가 발생하지 않았다면 ==> 로그인 테스트 없이 ID/PW 그대로 가져옴 
+		# 전역변수에 ID/PW 저장
+		global ADMIN_ID
+		ADMIN_ID = self.ID
+		global ADMIN_PW
+		ADMIN_PW = self.PW
 
-		while login_thread.login_test_success == None:
-			time.sleep(0.1)
-
-		# 쓰레드가 login에 성공한 경우
-		if login_thread.login_test_success == True:
-			self.load_auth_success = True
-
-			# 전역변수에 ID/PW 저장
-			global ADMIN_ID
-			ADMIN_ID = self.ID
-			global ADMIN_PW
-			ADMIN_PW = self.PW
-
-			# 전역변수에 인증 성공 저장
-			global AUTHENTICATION_SUCCESS
-			AUTHENTICATION_SUCCESS = True
-
-		# 쓰레드가 login에 실패한 경우
-		else:
-			print("파일의 인증정보로 로그인에 실패하여 파일을 삭제합니다.")
-			os.remove(AUTH_FILE)
-			self.file_exists = False
-
-			self.load_auth_success = False
-		
+		# 전역변수에 인증 성공 저장
+		global AUTHENTICATION_SUCCESS
+		AUTHENTICATION_SUCCESS = True
 		return
 
 	# ID, PW 인증정보를 파일에 저장 (자동로그인 체크하여 처음 로그인한 경우)
@@ -1137,6 +1112,27 @@ class LoadAuthInfo:
 		return True		# 성공
 
 
+# Chrome Driver 생성하기
+def getBrowser():
+	options = Options()
+	#options.add_argument("--headless")
+	#ptions.add_argument("--incognito")
+	#options.add_argument("--no-sandbox")
+	#options.add_argument("--disable-gpu")
+	options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 Edg/114.0.1823.37")
+	options.add_argument("log-level=2")
+	options.add_argument("lang=ko_KR")
+	options.add_argument("start-maximized")
+	options.add_argument("--enable-javascript")
+	options.add_argument('--disable-blink-features=AutomationControlled')		# 웹드라이버 사용 은폐하기 (콘솔에서 navigator.webdriver = false)
+	options.add_experimental_option('excludeSwitches', ['enable-logging'])		# 불필요한 로그 메시지 없애기
+	options.add_experimental_option("excludeSwitches", ["enable-automation"])
+	options.add_experimental_option('useAutomationExtension', False)
+	#options.add_argument("--user-data-dir=" + SESSION_INFO_PATH)				# 세션정보 저장
+	service = Service(executable_path=CHROME_DRIVER)
+	return webdriver.Chrome(service=service, options=options)
+
+
 ################################################################################
 ## 메인 함수
 ## 		- auth	: 파일에서 인증정보 가져오기
@@ -1146,12 +1142,15 @@ class LoadAuthInfo:
 ################################################################################
 if __name__ == '__main__':
 
+	# 크롬 드라이버 생성
+	browser = getBrowser()
+
 	# 파일로부터 인증정보 확인
 	auth = LoadAuthInfo()
 
 	# 인증정보 확인 안된 경우 ==> 로그인 메시지박스로 ID/PW 입력
-	if auth.load_auth_success == False:
-		login = LoginAgent()
+	if auth.login_success == False:
+		login = LoginAgent(browser)
 
 	# 파일이든 입력이든 인증 성공시 ==> 저공해차량 스티커 발급모드
 	if AUTHENTICATION_SUCCESS == True:
@@ -1160,6 +1159,6 @@ if __name__ == '__main__':
 		if auth.file_exists == False:
 			auth.save_auth_to_file(ADMIN_ID, ADMIN_PW)
 
-		ecoSticker = EcoSticker()
+		ecoSticker = EcoSticker(browser)
 	else:
 		sys.exit(0)		# 정상 종료

@@ -129,7 +129,7 @@ class WebAgentThread(Thread):
 		#self.options.add_argument("--incognito")
 		#self.options.add_argument("--no-sandbox")
 		#self.options.add_argument("--disable-gpu")
-		self.options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.46")
+		self.options.add_argument("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 Edg/114.0.1823.37")
 		self.options.add_argument("log-level=2")
 		self.options.add_argument("lang=ko_KR")
 		self.options.add_argument("start-maximized")
