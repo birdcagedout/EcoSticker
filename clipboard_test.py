@@ -26,32 +26,37 @@ class MyApp():
 		self.regnum_pattern = re.compile("([가-힣]{2})?[0-9]{2,3}[가-힣][0-9]{4}")
 		self.vin_pattern = re.compile("[0-9A-Z]{17}")
 
+		# tkinter 윈도
 		self.root = Tk()
-		self.root.geometry("400x300+2000+500")
+		self.root.geometry("400x300+1400+500")
 
-		self.label_state = Entry(self.root)
-		self.label_old = Entry(self.root)
-		self.label_new = Entry(self.root)
-		self.label_regnum = Entry(self.root)
-		self.label_vinnum = Entry(self.root)
-		self.label_state.pack()
-		self.label_old.pack()
-		self.label_new.pack()
-		self.label_regnum.pack()
-		self.label_vinnum.pack()
+		self.label_ID.grid(row=0, column=0, sticky=W, padx=2, pady=4)
+		self.entry_state = Entry(self.root)
+		self.entry_old = Entry(self.root)
+		self.entry_new = Entry(self.root)
+		self.entry_regnum = Entry(self.root)
+		self.entry_vinnum = Entry(self.root)
+		self.entry_state.pack()
+		self.entry_old.pack()
+		self.entry_new.pack()
+		self.entry_regnum.pack()
+		self.entry_vinnum.pack()
 		self.root.update()
 
 
+		# 클립보드 총괄함수
 		self.clipboard_automate()
 		self.root.mainloop()
 
 
 	def __del__(self):
 		if self.clipboard_timer.is_alive():
+			self.clipboard_timer.cancel()
 			self.clipboard_timer.join()
 
 
 
+	# 타이머 timeout 핸들러
 	def clipboard_timeout(self, clipboard_state):
 		if clipboard_state == ClipboardState.REGNUM:
 			self.regnum = ""
@@ -93,7 +98,7 @@ class MyApp():
 				self.clipboard_timer = Timer(5, self.clipboard_timeout, [self.clipboard_state])
 				self.clipboard_timer.start()
 
-				self.label_state.insert(0, str(self.clipboard_state))
+				self.entry_state.insert(0, str(self.clipboard_state))
 			self.old_content = new_content
 
 		# 현재 입력상태가 "차량번호 입력된 상태"라면
@@ -109,7 +114,7 @@ class MyApp():
 				self.clipboard_timer = Timer(5, self.clipboard_timeout, [self.clipboard_state])
 				self.clipboard_timer.start()
 
-				self.label_state.insert(0, str(self.clipboard_state))
+				self.entry_state.insert(0, str(self.clipboard_state))
 			else:
 				self.win_shake(horizontal=True)
 				self.regnum = ""
